@@ -38,7 +38,7 @@ const WIN_POINTS_R16   = 20;
 const WIN_POINTS_QF    = 35;
 const WIN_POINTS_SF    = 50;
 const WIN_POINTS_FINAL = 75;
-const STEAL_PCT        = 0.3;  // 30% of loser's bid stolen by winner's owner
+const STEAL_PCT        = 0.5;  // 50% of loser's bid stolen by winner's owner
 
 // ============================================
 // ROUND OF 32 SLOTS
@@ -115,8 +115,8 @@ let state = {
   matchResults: {},  // matchResults[matchId] = { winnerSlot, loserSlot }
   playerPoints: {},  // playerPoints[username] = total points earned
   eliminatedSlots: [],
-  // admin can update placeholder names
   slotOverrides: {}, // slotOverrides[slotId] = { name, flag }
+  notifications: {}, // notifications[username] = [{ id, msg, type, ts, read, slotId }]
 };
 
 let unsubscribe = null;
@@ -151,6 +151,7 @@ function startLiveListener() {
       state.playerPoints   = data.playerPoints   || {};
       state.eliminatedSlots= data.eliminatedSlots|| [];
       state.slotOverrides  = data.slotOverrides  || {};
+      state.notifications  = data.notifications  || {};
       refreshAll();
     }
   });
@@ -162,6 +163,28 @@ function refreshAll() {
   if (!document.getElementById('mypicks').classList.contains('hidden'))    renderMyPicks();
   if (!document.getElementById('leaderboard').classList.contains('hidden'))renderLeaderboard();
   if (!document.getElementById('results').classList.contains('hidden'))    renderResults();
+  if (!document.getElementById('inbox').classList.contains('hidden'))      renderInbox();
+  updateHeaderCoins();
+}
+
+
+// ============================================
+// NOTIFICATION HELPERS
+// ============================================
+function addNotification(username, msg, type, slotId = null) {
+  if (!state.notifications[username]) state.notifications[username] = [];
+  state.notifications[username].unshift({
+    id: Date.now() + Math.random(),
+    msg, type, slotId,
+    ts: new Date().toISOString(),
+    read: false,
+  });
+  // Keep max 30 notifications per user
+  state.notifications[username] = state.notifications[username].slice(0, 30);
+}
+
+function getUnreadCount(username) {
+  return (state.notifications[username] || []).filter(n => !n.read).length;
 }
 
 // ============================================
@@ -211,6 +234,14 @@ function updateHeaderCoins() {
   const remaining = getCoinsRemaining(currentUser);
   const owned = getTeamsOwned(currentUser).length;
   el.textContent = `${currentUser} · 🪙 ${remaining} coins · ${owned} teams`;
+  // Update inbox badge
+  const unread = getUnreadCount(currentUser);
+  const inboxBtn = document.getElementById('nav-inbox');
+  if (inboxBtn) {
+    inboxBtn.innerHTML = unread > 0
+      ? `📬 Inbox <span class="notif-badge">${unread}</span>`
+      : `📭 Inbox`;
+  }
 }
 
 // ============================================
@@ -226,6 +257,7 @@ async function login(name) {
   state.playerPoints    = shared.playerPoints    || {};
   state.eliminatedSlots = shared.eliminatedSlots || [];
   state.slotOverrides   = shared.slotOverrides   || {};
+  state.notifications   = shared.notifications   || {};
 
   currentUser = name;
   const isAdmin = name === 'Micole';
@@ -243,6 +275,7 @@ async function login(name) {
   renderLeaderboard();
   if (isAdmin) renderResults();
 
+  renderInbox();
   showSection('rules', { target: document.getElementById('nav-rules') });
   startLiveListener();
   showLoading(false);
@@ -269,6 +302,7 @@ function showSection(id, e) {
   if (id === 'mypicks')     renderMyPicks();
   if (id === 'leaderboard') renderLeaderboard();
   if (id === 'results')     renderResults();
+  if (id === 'inbox') { markAllRead(); renderInbox(); }
 }
 window.showSection = showSection;
 
@@ -355,6 +389,7 @@ function buildSlotCard(slot, isAdmin) {
   const isEliminated = state.eliminatedSlots.includes(slot.id);
 
   const card = document.createElement('div');
+  card.dataset.slotId = slot.id;
   card.className = 'slot-card' +
     (isMine ? ' slot-mine' : '') +
     (isEliminated ? ' slot-eliminated' : '') +
@@ -451,7 +486,22 @@ window.placeBid = async function(slotId) {
   if (!state.bids[slotId]) state.bids[slotId] = {};
   state.bids[slotId][currentUser] = amount;
 
-  await saveToFirebase('shared', { bids: state.bids });
+  // Notify anyone we just outbid (check existing bids before updating)
+  const existingBids = state.bids[slotId] || {};
+  Object.entries(existingBids).forEach(([otherUser, otherBid]) => {
+    if (otherUser !== currentUser && otherBid < amount) {
+      const slot = getSlot(slotId);
+      addNotification(
+        otherUser,
+        `🔥 ${currentUser} outbid you on ${slot?.flag || ''} ${slot?.name} (your bid: ${otherBid} · their bid: ${amount})`,
+        'outbid',
+        slotId
+      );
+    }
+  });
+
+  state.bids[slotId][currentUser] = amount;
+  await saveToFirebase('shared', { bids: state.bids, notifications: state.notifications });
   showToast(`Bid of ${amount} coins placed! 🪙`, 'success');
   renderAuction();
   updateHeaderCoins();
@@ -713,23 +763,52 @@ window.recordResult = async function(matchId, winnerSlot, loserSlot) {
   if (!state.playerPoints) state.playerPoints = {};
 
   if (winnerOwner) {
-    const pts = winnerOwner.coins; // you earn what you invested
+    const pts = winnerOwner.coins;
     state.playerPoints[winnerOwner.username] = (state.playerPoints[winnerOwner.username] || 0) + pts;
 
-    // Steal: winner's owner steals 30% of loser's coins too
     if (loserOwner) {
       const stolen = Math.round(loserOwner.coins * STEAL_PCT);
       state.playerPoints[winnerOwner.username] += stolen;
+      // Loser actually loses stolen amount (can go negative)
+      state.playerPoints[loserOwner.username] = (state.playerPoints[loserOwner.username] || 0) - stolen;
+
+      // Notify winner
+      addNotification(
+        winnerOwner.username,
+        `✅ Your ${winner?.flag} ${winner?.name} beat ${loserOwner.username}'s ${loser?.flag} ${loser?.name} — you earned ${pts} pts + stole ${stolen} pts! 🔥`,
+        'win', winnerSlot
+      );
+      // Notify loser
+      addNotification(
+        loserOwner.username,
+        `💸 ${winnerOwner.username}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — they stole ${stolen} pts from you!`,
+        'stolen', loserSlot
+      );
       showToast(`${winnerOwner.username} earned ${pts} pts + stole ${stolen} pts from ${loserOwner.username}! 🔥`, 'success');
     } else {
+      addNotification(
+        winnerOwner.username,
+        `✅ Your ${winner?.flag} ${winner?.name} won — you earned ${pts} pts!`,
+        'win', winnerSlot
+      );
       showToast(`${winnerOwner.username} earned ${pts} pts! ✅`, 'success');
     }
+  } else if (loserOwner) {
+    // Unowned winner knocked out an owned team — no steal, just notify loser
+    const stolen = Math.round(loserOwner.coins * STEAL_PCT);
+    state.playerPoints[loserOwner.username] = (state.playerPoints[loserOwner.username] || 0) - stolen;
+    addNotification(
+      loserOwner.username,
+      `❌ Your ${loser?.flag} ${loser?.name} was eliminated — you lost ${stolen} pts`,
+      'loss', loserSlot
+    );
   }
 
   await saveToFirebase('shared', {
     matchResults: state.matchResults,
     eliminatedSlots: state.eliminatedSlots,
     playerPoints: state.playerPoints,
+    notifications: state.notifications,
   });
 
   renderResults();
@@ -801,6 +880,76 @@ function renderLeaderboard() {
     note.innerHTML = '⚽ Points activate once match results are entered.';
     container.appendChild(note);
   }
+}
+
+// ============================================
+// INBOX / NOTIFICATIONS
+// ============================================
+async function markAllRead() {
+  const notifs = state.notifications[currentUser] || [];
+  notifs.forEach(n => n.read = true);
+  state.notifications[currentUser] = notifs;
+  await saveToFirebase('shared', { notifications: state.notifications });
+  renderInbox();
+  updateHeaderCoins();
+}
+window.markAllRead = markAllRead;
+
+window.jumpToBid = function(slotId) {
+  showSection('auction', { target: document.getElementById('nav-auction') });
+  setTimeout(() => {
+    const card = document.querySelector(`[data-slot-id="${slotId}"]`);
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }, 100);
+};
+
+function renderInbox() {
+  const container = document.getElementById('inbox-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const notifs = (state.notifications[currentUser] || []);
+  const unread = notifs.filter(n => !n.read).length;
+
+  if (notifs.length === 0) {
+    container.innerHTML = `
+      <div class="inbox-empty">
+        <div style="font-size:2.5rem;margin-bottom:12px">📭</div>
+        <div style="font-weight:600;margin-bottom:6px">All quiet here</div>
+        <div style="color:var(--text2);font-size:.88rem">Notifications about outbids and stolen points will appear here.</div>
+      </div>`;
+    return;
+  }
+
+  if (unread > 0) {
+    const markBtn = document.createElement('button');
+    markBtn.className = 'bid-btn';
+    markBtn.style.cssText = 'margin-bottom:16px;padding:8px 20px;';
+    markBtn.textContent = `Mark all as read (${unread})`;
+    markBtn.onclick = markAllRead;
+    container.appendChild(markBtn);
+  }
+
+  notifs.forEach(n => {
+    const item = document.createElement('div');
+    item.className = `inbox-item ${n.read ? 'inbox-read' : 'inbox-unread'} inbox-${n.type}`;
+
+    const ts = new Date(n.ts);
+    const timeStr = ts.toLocaleDateString('en-ZA', { day:'numeric', month:'short' }) +
+      ' · ' + ts.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
+
+    item.innerHTML = `
+      <div class="inbox-msg">${n.msg}</div>
+      <div class="inbox-meta">
+        ${!n.read ? '<span class="inbox-dot"></span>' : ''}
+        <span class="inbox-time">${timeStr}</span>
+        ${n.slotId && n.type === 'outbid' && !state.auctionLocked
+          ? `<button class="inbox-action-btn" onclick="jumpToBid('${n.slotId}')">Up my bid →</button>`
+          : ''}
+      </div>
+    `;
+    container.appendChild(item);
+  });
 }
 
 // ============================================
@@ -876,11 +1025,11 @@ async function resetEverything() {
   showLoading(true);
   await setDoc(doc(db, 'worldcup2026_r32', 'shared'), {
     bids: {}, owners: {}, auctionLocked: false,
-    matchResults: {}, playerPoints: {}, eliminatedSlots: [], slotOverrides: {}
+    matchResults: {}, playerPoints: {}, eliminatedSlots: [], slotOverrides: {}, notifications: {}
   });
   state = {
     bids:{}, owners:{}, auctionLocked:false,
-    matchResults:{}, playerPoints:{}, eliminatedSlots:[], slotOverrides:{}
+    matchResults:{}, playerPoints:{}, eliminatedSlots:[], slotOverrides:{}, notifications:{}
   };
   showLoading(false);
   showToast('🗑️ All auction data reset!', 'success');
