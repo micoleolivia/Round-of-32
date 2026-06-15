@@ -21,186 +21,148 @@ const db = getFirestore(firebaseApp);
 // PLAYERS
 // ============================================
 const PLAYERS = [
-  { name: 'Micole',   icon: '🐻', isAI: false },
-  { name: 'Mom',      icon: '🦒', isAI: false },
-  { name: 'Zac',      icon: '🦥', isAI: false },
-  { name: 'Sean',     icon: '🦅', isAI: false },
-  { name: 'Patricia', icon: '🦩', isAI: false },
+  { name: 'Micole',   icon: '🐻' },
+  { name: 'Mom',      icon: '🦒' },
+  { name: 'Zac',      icon: '🦥' },
+  { name: 'Sean',     icon: '🦅' },
+  { name: 'Patricia', icon: '🦩' },
 ];
 
-// ============================================
-// STARTING COINS & RULES
-// ============================================
-const STARTING_COINS   = 100;
-const MIN_TEAMS        = 3;
-const WIN_POINTS_R32   = 10;   // points for winning a R32 match
-const WIN_POINTS_R16   = 20;
-const WIN_POINTS_QF    = 35;
-const WIN_POINTS_SF    = 50;
-const WIN_POINTS_FINAL = 75;
-const STEAL_PCT        = 0.5;  // 50% of loser's bid stolen by winner's owner
+const STARTING_COINS = 100;
+const MIN_TEAMS      = 3;
 
 // ============================================
 // ROUND OF 32 SLOTS
-// 25 confirmed teams + 7 placeholders
 // ============================================
 const slots = [
-  // Confirmed teams
-  { id: 's1',  name: 'Brazil',        flag: '🇧🇷', confirmed: true,  group: 'C' },
-  { id: 's2',  name: 'France',        flag: '🇫🇷', confirmed: true,  group: 'I' },
-  { id: 's3',  name: 'Argentina',     flag: '🇦🇷', confirmed: true,  group: 'J' },
-  { id: 's4',  name: 'England',       flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', confirmed: true,  group: 'L' },
-  { id: 's5',  name: 'Spain',         flag: '🇪🇸', confirmed: true,  group: 'H' },
-  { id: 's6',  name: 'Germany',       flag: '🇩🇪', confirmed: true,  group: 'E' },
-  { id: 's7',  name: 'Portugal',      flag: '🇵🇹', confirmed: true,  group: 'K' },
-  { id: 's8',  name: 'Netherlands',   flag: '🇳🇱', confirmed: true,  group: 'F' },
-  { id: 's9',  name: 'Belgium',       flag: '🇧🇪', confirmed: true,  group: 'G' },
-  { id: 's10', name: 'Uruguay',       flag: '🇺🇾', confirmed: true,  group: 'H' },
-  { id: 's11', name: 'USA',           flag: '🇺🇸', confirmed: true,  group: 'D' },
-  { id: 's12', name: 'Canada',        flag: '🇨🇦', confirmed: true,  group: 'B' },
-  { id: 's13', name: 'Mexico',        flag: '🇲🇽', confirmed: true,  group: 'A' },
-  { id: 's14', name: 'Morocco',       flag: '🇲🇦', confirmed: true,  group: 'C' },
-  { id: 's15', name: 'Japan',         flag: '🇯🇵', confirmed: true,  group: 'F' },
-  { id: 's16', name: 'Senegal',       flag: '🇸🇳', confirmed: true,  group: 'I' },
-  { id: 's17', name: 'Colombia',      flag: '🇨🇴', confirmed: true,  group: 'K' },
-  { id: 's18', name: 'Ecuador',       flag: '🇪🇨', confirmed: true,  group: 'E' },
-  { id: 's19', name: 'Croatia',       flag: '🇭🇷', confirmed: true,  group: 'L' },
-  { id: 's20', name: 'South Korea',   flag: '🇰🇷', confirmed: true,  group: 'A' },
-  { id: 's21', name: 'Switzerland',   flag: '🇨🇭', confirmed: true,  group: 'B' },
-  { id: 's22', name: 'Austria',       flag: '🇦🇹', confirmed: true,  group: 'J' },
-  { id: 's23', name: 'Norway',        flag: '🇳🇴', confirmed: true,  group: 'I' },
-  { id: 's24', name: 'Türkiye',       flag: '🇹🇷', confirmed: true,  group: 'D' },
-  { id: 's25', name: 'DR Congo',      flag: '🇨🇩', confirmed: true,  group: 'K' },
-
-  // Placeholder slots — TBD from group stage
-  { id: 's26', name: 'Group A Runner-up', flag: '🏳️', confirmed: false, placeholder: 'South Africa or Czechia',     group: 'A' },
-  { id: 's27', name: 'Group B Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Bosnia & Herz. or Qatar',      group: 'B' },
-  { id: 's28', name: 'Group D Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Australia or Paraguay',        group: 'D' },
-  { id: 's29', name: 'Group E Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Ivory Coast or Curaçao',       group: 'E' },
-  { id: 's30', name: 'Group F Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Sweden or Tunisia',            group: 'F' },
-  { id: 's31', name: 'Group G Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Egypt or Iran',                group: 'G' },
-  { id: 's32', name: 'Group L Runner-up', flag: '🏳️', confirmed: false, placeholder: 'Ghana or Panama',              group: 'L' },
+  { id:'s1',  name:'Brazil',            flag:'🇧🇷', confirmed:true,  group:'C' },
+  { id:'s2',  name:'France',            flag:'🇫🇷', confirmed:true,  group:'I' },
+  { id:'s3',  name:'Argentina',         flag:'🇦🇷', confirmed:true,  group:'J' },
+  { id:'s4',  name:'England',           flag:'🏴󠁧󠁢󠁥󠁮󠁧󠁿', confirmed:true,  group:'L' },
+  { id:'s5',  name:'Spain',             flag:'🇪🇸', confirmed:true,  group:'H' },
+  { id:'s6',  name:'Germany',           flag:'🇩🇪', confirmed:true,  group:'E' },
+  { id:'s7',  name:'Portugal',          flag:'🇵🇹', confirmed:true,  group:'K' },
+  { id:'s8',  name:'Netherlands',       flag:'🇳🇱', confirmed:true,  group:'F' },
+  { id:'s9',  name:'Belgium',           flag:'🇧🇪', confirmed:true,  group:'G' },
+  { id:'s10', name:'Uruguay',           flag:'🇺🇾', confirmed:true,  group:'H' },
+  { id:'s11', name:'USA',               flag:'🇺🇸', confirmed:true,  group:'D' },
+  { id:'s12', name:'Canada',            flag:'🇨🇦', confirmed:true,  group:'B' },
+  { id:'s13', name:'Mexico',            flag:'🇲🇽', confirmed:true,  group:'A' },
+  { id:'s14', name:'Morocco',           flag:'🇲🇦', confirmed:true,  group:'C' },
+  { id:'s15', name:'Japan',             flag:'🇯🇵', confirmed:true,  group:'F' },
+  { id:'s16', name:'Senegal',           flag:'🇸🇳', confirmed:true,  group:'I' },
+  { id:'s17', name:'Colombia',          flag:'🇨🇴', confirmed:true,  group:'K' },
+  { id:'s18', name:'Ecuador',           flag:'🇪🇨', confirmed:true,  group:'E' },
+  { id:'s19', name:'Croatia',           flag:'🇭🇷', confirmed:true,  group:'L' },
+  { id:'s20', name:'South Korea',       flag:'🇰🇷', confirmed:true,  group:'A' },
+  { id:'s21', name:'Switzerland',       flag:'🇨🇭', confirmed:true,  group:'B' },
+  { id:'s22', name:'Austria',           flag:'🇦🇹', confirmed:true,  group:'J' },
+  { id:'s23', name:'Norway',            flag:'🇳🇴', confirmed:true,  group:'I' },
+  { id:'s24', name:'Türkiye',           flag:'🇹🇷', confirmed:true,  group:'D' },
+  { id:'s25', name:'DR Congo',          flag:'🇨🇩', confirmed:true,  group:'K' },
+  { id:'s26', name:'Group A Runner-up', flag:'🏳️', confirmed:false, placeholder:'South Africa or Czechia',  group:'A' },
+  { id:'s27', name:'Group B Runner-up', flag:'🏳️', confirmed:false, placeholder:'Bosnia & Herz. or Qatar', group:'B' },
+  { id:'s28', name:'Group D Runner-up', flag:'🏳️', confirmed:false, placeholder:'Australia or Paraguay',   group:'D' },
+  { id:'s29', name:'Group E Runner-up', flag:'🏳️', confirmed:false, placeholder:'Ivory Coast or Curaçao',  group:'E' },
+  { id:'s30', name:'Group F Runner-up', flag:'🏳️', confirmed:false, placeholder:'Sweden or Tunisia',       group:'F' },
+  { id:'s31', name:'Group G Runner-up', flag:'🏳️', confirmed:false, placeholder:'Egypt or Iran',           group:'G' },
+  { id:'s32', name:'Group L Runner-up', flag:'🏳️', confirmed:false, placeholder:'Ghana or Panama',         group:'L' },
 ];
 
-// ============================================
-// ROUND OF 32 MATCH FIXTURES
-// ============================================
 const r32Matches = [
-  { id: 'r32-1',  slotA: 's1',  slotB: 's26', label: 'Brazil vs Group A Runner-up' },
-  { id: 'r32-2',  slotA: 's13', slotB: 's20', label: 'Mexico vs South Korea' },
-  { id: 'r32-3',  slotA: 's12', slotB: 's21', label: 'Canada vs Switzerland' },
-  { id: 'r32-4',  slotA: 's27', slotB: 's2',  label: 'Group B Runner-up vs France' },
-  { id: 'r32-5',  slotA: 's14', slotB: 's4',  label: 'Morocco vs England' },
-  { id: 'r32-6',  slotA: 's19', slotB: 's32', label: 'Croatia vs Group L Runner-up' },
-  { id: 'r32-7',  slotA: 's11', slotB: 's24', label: 'USA vs Türkiye' },
-  { id: 'r32-8',  slotA: 's28', slotB: 's6',  label: 'Group D Runner-up vs Germany' },
-  { id: 'r32-9',  slotA: 's18', slotB: 's29', label: 'Ecuador vs Group E Runner-up' },
-  { id: 'r32-10', slotA: 's31', slotB: 's9',  label: 'Group G Runner-up vs Belgium' },
-  { id: 'r32-11', slotA: 's15', slotB: 's30', label: 'Japan vs Group F Runner-up' },
-  { id: 'r32-12', slotA: 's8',  slotB: 's16', label: 'Netherlands vs Senegal' },
-  { id: 'r32-13', slotA: 's5',  slotB: 's10', label: 'Spain vs Uruguay' },
-  { id: 'r32-14', slotA: 's23', slotB: 's3',  label: 'Norway vs Argentina' },
-  { id: 'r32-15', slotA: 's7',  slotB: 's17', label: 'Portugal vs Colombia' },
-  { id: 'r32-16', slotA: 's25', slotB: 's22', label: 'DR Congo vs Austria' },
+  { id:'r32-1',  slotA:'s1',  slotB:'s26' },
+  { id:'r32-2',  slotA:'s13', slotB:'s20' },
+  { id:'r32-3',  slotA:'s12', slotB:'s21' },
+  { id:'r32-4',  slotA:'s27', slotB:'s2'  },
+  { id:'r32-5',  slotA:'s14', slotB:'s4'  },
+  { id:'r32-6',  slotA:'s19', slotB:'s32' },
+  { id:'r32-7',  slotA:'s11', slotB:'s24' },
+  { id:'r32-8',  slotA:'s28', slotB:'s6'  },
+  { id:'r32-9',  slotA:'s18', slotB:'s29' },
+  { id:'r32-10', slotA:'s31', slotB:'s9'  },
+  { id:'r32-11', slotA:'s15', slotB:'s30' },
+  { id:'r32-12', slotA:'s8',  slotB:'s16' },
+  { id:'r32-13', slotA:'s5',  slotB:'s10' },
+  { id:'r32-14', slotA:'s23', slotB:'s3'  },
+  { id:'r32-15', slotA:'s7',  slotB:'s17' },
+  { id:'r32-16', slotA:'s25', slotB:'s22' },
 ];
 
 // ============================================
-// APP STATE
+// STATE
 // ============================================
 let currentUser = null;
 let state = {
-  bids: {},          // bids[slotId][username] = coinAmount
-  owners: {},        // owners[slotId] = { username, coins }
-  auctionLocked: false,
+  bids:         {},  // bids[slotId][username] = amount
+  owners:       {},  // owners[slotId] = { username, coins }  — original auction owner
+  collection:   {},  // collection[username] = [{ slotId, how:'original'|'stolen'|'collected' }]
+  auctionLocked:false,
   matchResults: {},  // matchResults[matchId] = { winnerSlot, loserSlot }
-  playerPoints: {},  // playerPoints[username] = total points earned
-  eliminatedSlots: [],
-  slotOverrides: {}, // slotOverrides[slotId] = { name, flag }
-  notifications: {}, // notifications[username] = [{ id, msg, type, ts, read, slotId }]
+  slotOverrides:{},  // slotOverrides[slotId] = { name, flag }
+  notifications:{},  // notifications[username] = [{ id, msg, type, ts, read, slotId }]
 };
 
 let unsubscribe = null;
 
 // ============================================
-// FIREBASE HELPERS
+// FIREBASE
 // ============================================
-async function saveToFirebase(docName, data) {
+async function saveToFirebase(data) {
   try {
-    await setDoc(doc(db, 'worldcup2026_r32', docName), data, { merge: true });
-  } catch(e) {
-    showToast('Save failed — check connection', 'error');
-  }
+    await setDoc(doc(db,'worldcup2026_r32','shared'), data, { merge:true });
+  } catch(e) { showToast('Save failed','error'); }
 }
 
-async function loadFromFirebase(docName) {
+async function loadFromFirebase() {
   try {
-    const snap = await getDoc(doc(db, 'worldcup2026_r32', docName));
+    const snap = await getDoc(doc(db,'worldcup2026_r32','shared'));
     return snap.exists() ? snap.data() : {};
   } catch(e) { return {}; }
 }
 
 function startLiveListener() {
   if (unsubscribe) unsubscribe();
-  unsubscribe = onSnapshot(doc(db, 'worldcup2026_r32', 'shared'), (snap) => {
+  unsubscribe = onSnapshot(doc(db,'worldcup2026_r32','shared'), snap => {
     if (snap.exists()) {
-      const data = snap.data();
-      state.bids           = data.bids           || {};
-      state.owners         = data.owners         || {};
-      state.auctionLocked  = data.auctionLocked  || false;
-      state.matchResults   = data.matchResults   || {};
-      state.playerPoints   = data.playerPoints   || {};
-      state.eliminatedSlots= data.eliminatedSlots|| [];
-      state.slotOverrides  = data.slotOverrides  || {};
-      state.notifications  = data.notifications  || {};
+      const d = snap.data();
+      state.bids          = d.bids          || {};
+      state.owners        = d.owners        || {};
+      state.collection    = d.collection    || {};
+      state.auctionLocked = d.auctionLocked || false;
+      state.matchResults  = d.matchResults  || {};
+      state.slotOverrides = d.slotOverrides || {};
+      state.notifications = d.notifications || {};
       refreshAll();
     }
   });
 }
 
 function refreshAll() {
-  updateHeaderCoins();
-  if (!document.getElementById('auction').classList.contains('hidden'))    renderAuction();
-  if (!document.getElementById('mypicks').classList.contains('hidden'))    renderMyPicks();
-  if (!document.getElementById('leaderboard').classList.contains('hidden'))renderLeaderboard();
-  if (!document.getElementById('results').classList.contains('hidden'))    renderResults();
-  if (!document.getElementById('inbox').classList.contains('hidden'))      renderInbox();
-  updateHeaderCoins();
-}
-
-
-// ============================================
-// NOTIFICATION HELPERS
-// ============================================
-function addNotification(username, msg, type, slotId = null) {
-  if (!state.notifications[username]) state.notifications[username] = [];
-  state.notifications[username].unshift({
-    id: Date.now() + Math.random(),
-    msg, type, slotId,
-    ts: new Date().toISOString(),
-    read: false,
-  });
-  // Keep max 30 notifications per user
-  state.notifications[username] = state.notifications[username].slice(0, 30);
-}
-
-function getUnreadCount(username) {
-  return (state.notifications[username] || []).filter(n => !n.read).length;
+  updateHeader();
+  if (!document.getElementById('auction').classList.contains('hidden'))     renderAuction();
+  if (!document.getElementById('mypicks').classList.contains('hidden'))     renderMyPicks();
+  if (!document.getElementById('leaderboard').classList.contains('hidden')) renderLeaderboard();
+  if (!document.getElementById('results').classList.contains('hidden'))     renderResults();
+  if (!document.getElementById('inbox').classList.contains('hidden'))       renderInbox();
 }
 
 // ============================================
-// COIN HELPERS
+// HELPERS
 // ============================================
+function getSlot(slotId) {
+  const base = slots.find(s => s.id === slotId);
+  if (!base) return null;
+  const ov = state.slotOverrides[slotId];
+  return ov ? { ...base, name:ov.name, flag:ov.flag, confirmed:true } : base;
+}
+
 function getCoinsSpent(username) {
-  // Only count confirmed owned teams
   let spent = 0;
-  Object.values(state.owners).forEach(o => {
-    if (o.username === username) spent += o.coins;
-  });
+  Object.values(state.owners).forEach(o => { if (o.username === username) spent += o.coins; });
   return spent;
 }
 
 function getCoinsCommitted(username) {
-  // Coins tied up in active bids on unowned slots
   let committed = 0;
   Object.entries(state.bids).forEach(([slotId, bids]) => {
     if (state.owners[slotId]) return;
@@ -210,37 +172,45 @@ function getCoinsCommitted(username) {
 }
 
 function getCoinsRemaining(username) {
-  // Available = starting minus confirmed purchases minus active bids
   return STARTING_COINS - getCoinsSpent(username) - getCoinsCommitted(username);
 }
 
-function getTeamsOwned(username) {
-  return Object.entries(state.owners)
-    .filter(([, o]) => o.username === username)
-    .map(([slotId]) => slotId);
+function getCollection(username) {
+  return state.collection[username] || [];
 }
 
-function getSlot(slotId) {
-  const base = slots.find(s => s.id === slotId);
-  if (!base) return null;
-  const override = state.slotOverrides[slotId];
-  if (override) return { ...base, name: override.name, flag: override.flag, confirmed: true };
-  return base;
+function getTotalTeams(username) {
+  return getCollection(username).length;
 }
 
-function updateHeaderCoins() {
+// Who currently "holds" a slot (could be stolen)
+function getCurrentHolder(slotId) {
+  for (const [username, col] of Object.entries(state.collection)) {
+    if (col.find(c => c.slotId === slotId)) return username;
+  }
+  return null;
+}
+
+function addNotification(username, msg, type, slotId=null) {
+  if (!state.notifications[username]) state.notifications[username] = [];
+  state.notifications[username].unshift({ id: Date.now()+Math.random(), msg, type, slotId, ts: new Date().toISOString(), read:false });
+  state.notifications[username] = state.notifications[username].slice(0,30);
+}
+
+function getUnreadCount(username) {
+  return (state.notifications[username]||[]).filter(n=>!n.read).length;
+}
+
+function updateHeader() {
   const el = document.getElementById('welcome-msg');
   if (!el || !currentUser) return;
   const remaining = getCoinsRemaining(currentUser);
-  const owned = getTeamsOwned(currentUser).length;
-  el.textContent = `${currentUser} · 🪙 ${remaining} coins · ${owned} teams`;
-  // Update inbox badge
-  const unread = getUnreadCount(currentUser);
+  const teams = getTotalTeams(currentUser);
+  el.textContent = `${currentUser} · 🪙 ${remaining} coins · 🏳️ ${teams} teams`;
   const inboxBtn = document.getElementById('nav-inbox');
   if (inboxBtn) {
-    inboxBtn.innerHTML = unread > 0
-      ? `📬 Inbox <span class="notif-badge">${unread}</span>`
-      : `📭 Inbox`;
+    const unread = getUnreadCount(currentUser);
+    inboxBtn.innerHTML = unread > 0 ? `📬 Inbox <span class="notif-badge">${unread}</span>` : `📭 Inbox`;
   }
 }
 
@@ -249,33 +219,31 @@ function updateHeaderCoins() {
 // ============================================
 async function login(name) {
   showLoading(true);
-  const shared = await loadFromFirebase('shared');
-  state.bids            = shared.bids            || {};
-  state.owners          = shared.owners          || {};
-  state.auctionLocked   = shared.auctionLocked   || false;
-  state.matchResults    = shared.matchResults    || {};
-  state.playerPoints    = shared.playerPoints    || {};
-  state.eliminatedSlots = shared.eliminatedSlots || [];
-  state.slotOverrides   = shared.slotOverrides   || {};
-  state.notifications   = shared.notifications   || {};
+  const d = await loadFromFirebase();
+  state.bids          = d.bids          || {};
+  state.owners        = d.owners        || {};
+  state.collection    = d.collection    || {};
+  state.auctionLocked = d.auctionLocked || false;
+  state.matchResults  = d.matchResults  || {};
+  state.slotOverrides = d.slotOverrides || {};
+  state.notifications = d.notifications || {};
 
   currentUser = name;
   const isAdmin = name === 'Micole';
 
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-
   document.getElementById('reset-btn').classList.toggle('hidden', !isAdmin);
   document.getElementById('nav-results').classList.toggle('hidden', !isAdmin);
 
-  updateHeaderCoins();
+  updateHeader();
   renderRules();
   renderAuction();
   renderMyPicks();
   renderLeaderboard();
+  renderInbox();
   if (isAdmin) renderResults();
 
-  renderInbox();
   showSection('rules', { target: document.getElementById('nav-rules') });
   startLiveListener();
   showLoading(false);
@@ -302,7 +270,7 @@ function showSection(id, e) {
   if (id === 'mypicks')     renderMyPicks();
   if (id === 'leaderboard') renderLeaderboard();
   if (id === 'results')     renderResults();
-  if (id === 'inbox') { markAllRead(); renderInbox(); }
+  if (id === 'inbox')       { markAllRead(); renderInbox(); }
 }
 window.showSection = showSection;
 
@@ -314,11 +282,10 @@ function renderAuction() {
   const statusBar  = document.getElementById('auction-status-bar');
   if (!container) return;
 
-  const isAdmin = currentUser === 'Micole';
-  const coinsLeft = getCoinsRemaining(currentUser);
-  const teamsOwned = getTeamsOwned(currentUser).length;
+  const isAdmin    = currentUser === 'Micole';
+  const coinsLeft  = getCoinsRemaining(currentUser);
+  const teamCount  = getTotalTeams(currentUser);
 
-  // Status bar
   statusBar.innerHTML = `
     <div class="auction-status">
       <div class="auction-stat">
@@ -326,49 +293,42 @@ function renderAuction() {
         <div class="auction-stat-lbl">coins left</div>
       </div>
       <div class="auction-stat">
-        <div class="auction-stat-val">🏳️ ${teamsOwned}</div>
+        <div class="auction-stat-val">🏳️ ${teamCount}</div>
         <div class="auction-stat-lbl">teams owned</div>
       </div>
       <div class="auction-stat">
-        <div class="auction-stat-val" style="color:${teamsOwned >= MIN_TEAMS ? 'var(--teal)' : 'var(--red)'}">
-          ${teamsOwned >= MIN_TEAMS ? '✅' : '⚠️'} ${MIN_TEAMS} min
+        <div class="auction-stat-val" style="color:${teamCount>=MIN_TEAMS?'var(--teal)':'var(--red)'}">
+          ${teamCount>=MIN_TEAMS?'✅':'⚠️'} ${MIN_TEAMS} min
         </div>
         <div class="auction-stat-lbl">required</div>
       </div>
       ${state.auctionLocked ? '<div class="auction-locked-banner">🔒 Auction closed — squads are final</div>' : ''}
-    </div>
-  `;
+    </div>`;
 
   container.innerHTML = '';
 
-  // Group confirmed vs placeholder
   const confirmed   = slots.filter(s => s.confirmed || state.slotOverrides[s.id]);
   const placeholder = slots.filter(s => !s.confirmed && !state.slotOverrides[s.id]);
 
-  // CONFIRMED TEAMS
-  const confirmedTitle = document.createElement('div');
-  confirmedTitle.className = 'auction-section-title';
-  confirmedTitle.textContent = '✅ Confirmed Teams';
-  container.appendChild(confirmedTitle);
+  const buildSection = (title, list) => {
+    const titleEl = document.createElement('div');
+    titleEl.className = 'auction-section-title';
+    titleEl.textContent = title;
+    container.appendChild(titleEl);
+    const grid = document.createElement('div');
+    grid.className = 'auction-grid';
+    list.forEach(slot => grid.appendChild(buildSlotCard(slot, isAdmin)));
+    container.appendChild(grid);
+  };
 
-  const confirmedGrid = document.createElement('div');
-  confirmedGrid.className = 'auction-grid';
-  confirmed.forEach(slot => confirmedGrid.appendChild(buildSlotCard(slot, isAdmin)));
-  container.appendChild(confirmedGrid);
+  buildSection('✅ Confirmed Teams', confirmed);
+  if (placeholder.length > 0) {
+    const divEl = document.createElement('div');
+    divEl.style.marginTop = '32px';
+    container.appendChild(divEl);
+    buildSection('⏳ TBD Slots — bid now, team confirmed later', placeholder);
+  }
 
-  // PLACEHOLDER SLOTS
-  const placeholderTitle = document.createElement('div');
-  placeholderTitle.className = 'auction-section-title';
-  placeholderTitle.style.marginTop = '32px';
-  placeholderTitle.textContent = '⏳ TBD Slots — bid now, team confirmed later';
-  container.appendChild(placeholderTitle);
-
-  const placeholderGrid = document.createElement('div');
-  placeholderGrid.className = 'auction-grid';
-  placeholder.forEach(slot => placeholderGrid.appendChild(buildSlotCard(slot, isAdmin)));
-  container.appendChild(placeholderGrid);
-
-  // Admin: lock auction button
   if (isAdmin && !state.auctionLocked) {
     const lockBtn = document.createElement('button');
     lockBtn.className = 'cta-btn';
@@ -380,32 +340,55 @@ function renderAuction() {
 }
 
 function buildSlotCard(slot, isAdmin) {
-  const actualSlot   = getSlot(slot.id);
-  const owner        = state.owners[slot.id];
-  const myBid        = (state.bids[slot.id] || {})[currentUser] || 0;
-  const allBids      = state.bids[slot.id] || {};
-  const topBid       = Math.max(0, ...Object.values(allBids));
-  const isMine       = owner?.username === currentUser;
-  const isEliminated = state.eliminatedSlots.includes(slot.id);
+  const actualSlot  = getSlot(slot.id);
+  const owner       = state.owners[slot.id];
+  const myBid       = (state.bids[slot.id]||{})[currentUser] || 0;
+  const allBids     = state.bids[slot.id] || {};
+  const topBid      = Object.values(allBids).length ? Math.max(...Object.values(allBids)) : 0;
+  const isMine      = owner?.username === currentUser;
+
+  // Determine card status for border colour
+  // green = I originally own it, purple = I stole/collected it, grey = eliminated
+  const myCol = getCollection(currentUser);
+  const myEntry = myCol.find(c => c.slotId === slot.id);
+  const isInMyCollection = !!myEntry;
+  const isStolen = myEntry?.how === 'stolen' || myEntry?.how === 'collected';
+  const isEliminated = Object.values(state.matchResults).some(r => r.loserSlot === slot.id);
 
   const card = document.createElement('div');
   card.dataset.slotId = slot.id;
-  card.className = 'slot-card' +
-    (isMine ? ' slot-mine' : '') +
-    (isEliminated ? ' slot-eliminated' : '') +
-    (!actualSlot.confirmed ? ' slot-tbd' : '');
+  let cardClass = 'slot-card';
+  if (isInMyCollection && !isStolen) cardClass += ' slot-mine';
+  else if (isInMyCollection && isStolen) cardClass += ' slot-stolen-mine';
+  else if (isEliminated) cardClass += ' slot-eliminated';
+  else if (!actualSlot.confirmed) cardClass += ' slot-tbd';
+  card.className = cardClass;
 
-  // Header
+  // Who owns it in the collection right now?
+  const holder = getCurrentHolder(slot.id);
+  const holderPlayer = holder ? PLAYERS.find(p => p.name === holder) : null;
+
   let ownerHTML = '';
-  if (owner) {
-    const ownerPlayer = PLAYERS.find(p => p.name === owner.username);
-    ownerHTML = `<div class="slot-owner">${ownerPlayer?.icon || ''} ${owner.username} · ${owner.coins} coins</div>`;
-  } else {
-    // Show top bidder if no owner yet
-    if (topBid > 0) {
-      const topBidder = Object.entries(allBids).find(([,v]) => v === topBid)?.[0];
-      const tp = PLAYERS.find(p => p.name === topBidder);
-      ownerHTML = `<div class="slot-top-bid">🔥 Top bid: ${tp?.icon || ''} ${topBidder} · ${topBid} coins</div>`;
+  if (owner && state.auctionLocked) {
+    // Show original owner + current holder if stolen
+    const origPlayer = PLAYERS.find(p => p.name === owner.username);
+    if (holder && holder !== owner.username) {
+      const holP = PLAYERS.find(p => p.name === holder);
+      ownerHTML = `
+        <div class="slot-owner-row">
+          <span class="slot-owner-orig">orig: ${origPlayer?.icon} ${owner.username}</span>
+          <span class="slot-stolen-by">stolen by ${holP?.icon} ${holder}</span>
+        </div>`;
+    } else if (holder) {
+      ownerHTML = `<div class="slot-owner">🟢 ${holderPlayer?.icon} ${holder} · ${owner.coins} coins</div>`;
+    }
+  } else if (!state.auctionLocked) {
+    if (owner) {
+      ownerHTML = `<div class="slot-owner">🟢 ${PLAYERS.find(p=>p.name===owner.username)?.icon} ${owner.username} · ${owner.coins} coins</div>`;
+    } else if (topBid > 0) {
+      const topBidder = Object.entries(allBids).find(([,v])=>v===topBid)?.[0];
+      const tp = PLAYERS.find(p=>p.name===topBidder);
+      ownerHTML = `<div class="slot-top-bid">🔥 Top bid: ${tp?.icon||''} ${topBidder} · ${topBid} coins</div>`;
     }
   }
 
@@ -420,160 +403,149 @@ function buildSlotCard(slot, isAdmin) {
     ${ownerHTML}
   `;
 
-  // Bid form (only if no owner yet and auction not locked)
+  // Bid form — only pre-auction
   if (!owner && !state.auctionLocked && !isEliminated) {
-    const coinsLeft = getCoinsRemaining(currentUser);
+    const coinsLeft  = getCoinsRemaining(currentUser);
     const bidSection = document.createElement('div');
     bidSection.className = 'bid-section';
 
     if (myBid > 0) {
-      // coinsLeft already excludes myBid via getCoinsCommitted, so max = coinsLeft + myBid (upgrading existing bid)
       const upgradeMax = coinsLeft + myBid;
       bidSection.innerHTML = `
         <div class="my-bid-display">Your bid: <strong>${myBid} coins</strong></div>
         <div class="bid-row">
-          <input type="number" min="${Math.min(myBid,1)}" max="${upgradeMax}" value="${myBid}" id="bid-input-${slot.id}" class="bid-input"/>
+          <input type="number" min="5" max="${upgradeMax}" value="${myBid}" id="bid-input-${slot.id}" class="bid-input"/>
           <button class="bid-btn" onclick="placeBid('${slot.id}')">Update</button>
           <button class="bid-remove-btn" onclick="removeBid('${slot.id}')">✕</button>
         </div>
-        <div class="bid-hint">min ${topBid + 1} to lead · ${upgradeMax} coins available to bid</div>
-      `;
+        <div class="bid-hint">min ${topBid+1} to lead · ${upgradeMax} coins available</div>`;
     } else {
       bidSection.innerHTML = `
         <div class="bid-row">
-          <input type="number" min="5" max="${coinsLeft}" value="${Math.min(Math.max(topBid + 1, 5), coinsLeft)}" id="bid-input-${slot.id}" class="bid-input"/>
+          <input type="number" min="5" max="${coinsLeft}" value="${Math.min(Math.max(topBid+1,5),coinsLeft)}" id="bid-input-${slot.id}" class="bid-input"/>
           <button class="bid-btn" onclick="placeBid('${slot.id}')">Bid 🪙</button>
         </div>
-        <div class="bid-hint">${topBid > 0 ? `min ${topBid + 1} to lead · ` : 'min 5 coins · '}${coinsLeft} coins available</div>
-      `;
+        <div class="bid-hint">${topBid>0?`min ${topBid+1} to lead · `:'min 5 coins · '}${coinsLeft} coins available</div>`;
     }
     card.appendChild(bidSection);
   }
 
-
-
-  // Admin: update placeholder name
+  // Admin: update placeholder
   if (isAdmin && !actualSlot.confirmed) {
-    const overrideSection = document.createElement('div');
-    overrideSection.className = 'bid-section';
-    overrideSection.innerHTML = `
+    const ov = document.createElement('div');
+    ov.className = 'bid-section';
+    ov.innerHTML = `
       <div class="bid-hint" style="margin-bottom:4px">Confirm team once known:</div>
-      <input type="text" id="override-name-${slot.id}" class="bid-input" style="width:100%;margin-bottom:4px" placeholder="Team name e.g. Ghana"/>
+      <input type="text" id="override-name-${slot.id}" class="bid-input" style="width:100%;margin-bottom:4px" placeholder="Team name"/>
       <input type="text" id="override-flag-${slot.id}" class="bid-input" style="width:60px;margin-bottom:4px" placeholder="🏳️"/>
-      <button class="bid-btn" style="width:100%" onclick="confirmSlotTeam('${slot.id}')">Confirm Team</button>
-    `;
-    card.appendChild(overrideSection);
+      <button class="bid-btn" style="width:100%" onclick="confirmSlotTeam('${slot.id}')">Confirm Team</button>`;
+    card.appendChild(ov);
   }
 
   return card;
 }
 
 // ============================================
-// BIDDING ACTIONS
+// BIDDING
 // ============================================
 window.placeBid = async function(slotId) {
-  const input = document.getElementById(`bid-input-${slotId}`);
+  const input  = document.getElementById(`bid-input-${slotId}`);
   const amount = parseInt(input?.value);
-  const myCurrentBid = (state.bids[slotId] || {})[currentUser] || 0;
-  // When updating a bid, coins available = remaining + what we already committed here
+  const myCurrentBid   = (state.bids[slotId]||{})[currentUser] || 0;
   const coinsAvailable = getCoinsRemaining(currentUser) + myCurrentBid;
 
-  if (isNaN(amount) || amount < 5) { showToast('Minimum bid is 5 coins!', 'error'); return; }
-  if (amount > coinsAvailable) {
-    showToast(`Not enough coins! You have ${coinsAvailable} available.`, 'error'); return;
-  }
+  if (isNaN(amount) || amount < 5) { showToast('Minimum bid is 5 coins!','error'); return; }
+  if (amount > coinsAvailable) { showToast(`Only ${coinsAvailable} coins available!`,'error'); return; }
 
-  if (!state.bids[slotId]) state.bids[slotId] = {};
-  state.bids[slotId][currentUser] = amount;
-
-  // Notify anyone we just outbid (check existing bids before updating)
+  // Notify anyone being outbid
   const existingBids = state.bids[slotId] || {};
   Object.entries(existingBids).forEach(([otherUser, otherBid]) => {
     if (otherUser !== currentUser && otherBid < amount) {
       const slot = getSlot(slotId);
-      addNotification(
-        otherUser,
-        `🔥 ${currentUser} outbid you on ${slot?.flag || ''} ${slot?.name} (your bid: ${otherBid} · their bid: ${amount})`,
-        'outbid',
-        slotId
-      );
+      addNotification(otherUser,
+        `🔥 ${currentUser} outbid you on ${slot?.flag} ${slot?.name} (your bid: ${otherBid} · their bid: ${amount})`,
+        'outbid', slotId);
     }
   });
 
+  if (!state.bids[slotId]) state.bids[slotId] = {};
   state.bids[slotId][currentUser] = amount;
-  await saveToFirebase('shared', { bids: state.bids, notifications: state.notifications });
-  showToast(`Bid of ${amount} coins placed! 🪙`, 'success');
+
+  await saveToFirebase({ bids: state.bids, notifications: state.notifications });
+  showToast(`Bid of ${amount} coins placed! 🪙`,'success');
   renderAuction();
-  updateHeaderCoins();
+  updateHeader();
 };
 
 window.removeBid = async function(slotId) {
-  if (!confirm('Remove your bid on this team?')) return;
+  if (!confirm('Remove your bid?')) return;
   if (state.bids[slotId]) {
     delete state.bids[slotId][currentUser];
-    await saveToFirebase('shared', { bids: state.bids });
-    showToast('Bid removed.', '');
+    await saveToFirebase({ bids: state.bids });
+    showToast('Bid removed.','');
     renderAuction();
-    updateHeaderCoins();
+    updateHeader();
   }
 };
 
-window.confirmOwner = async function(slotId, username, coins) {
-  if (!confirm(`Confirm ${username} owns this team for ${coins} coins?`)) return;
-  if (!state.owners) state.owners = {};
-  state.owners[slotId] = { username, coins };
-  await saveToFirebase('shared', { owners: state.owners });
-  showToast(`${username} now owns this team! ✅`, 'success');
-  renderAuction();
-};
-
 window.confirmSlotTeam = async function(slotId) {
-  const nameEl = document.getElementById(`override-name-${slotId}`);
-  const flagEl = document.getElementById(`override-flag-${slotId}`);
-  const name = nameEl?.value?.trim();
-  const flag = flagEl?.value?.trim() || '🏳️';
-  if (!name) { showToast('Enter the team name!', 'error'); return; }
-  if (!confirm(`Confirm this slot is now ${flag} ${name}?`)) return;
+  const name = document.getElementById(`override-name-${slotId}`)?.value?.trim();
+  const flag = document.getElementById(`override-flag-${slotId}`)?.value?.trim() || '🏳️';
+  if (!name) { showToast('Enter the team name!','error'); return; }
+  if (!confirm(`Confirm this slot is ${flag} ${name}?`)) return;
   if (!state.slotOverrides) state.slotOverrides = {};
   state.slotOverrides[slotId] = { name, flag };
-  await saveToFirebase('shared', { slotOverrides: state.slotOverrides });
-  showToast(`Slot updated to ${name}! ✅`, 'success');
+  await saveToFirebase({ slotOverrides: state.slotOverrides });
+  showToast(`Slot updated to ${name}!`,'success');
   renderAuction();
 };
 
 async function lockAuction() {
-  if (!confirm('Lock the auction? Highest bidders will automatically win their teams!')) return;
-  
-  // Auto-assign every slot to the highest bidder
+  if (!confirm('Lock the auction? Highest bidders automatically win their teams!')) return;
   if (!state.owners) state.owners = {};
+  if (!state.collection) state.collection = {};
+
+  // Assign owners and seed collections
   Object.entries(state.bids).forEach(([slotId, bids]) => {
-    if (state.owners[slotId]) return; // already owned
-    const entries = Object.entries(bids).sort(([,a],[,b]) => b - a);
-    if (entries.length === 0) return;
+    if (state.owners[slotId]) return;
+    const entries = Object.entries(bids).sort(([,a],[,b]) => b-a);
+    if (!entries.length) return;
     const [winner, coins] = entries[0];
     state.owners[slotId] = { username: winner, coins };
+    // Add to winner's collection as 'original'
+    if (!state.collection[winner]) state.collection[winner] = [];
+    state.collection[winner].push({ slotId, how:'original' });
+    // Notify losers
+    entries.slice(1).forEach(([loser]) => {
+      const slot = getSlot(slotId);
+      addNotification(loser,
+        `❌ You lost the auction for ${slot?.flag} ${slot?.name} — ${winner} won it`,
+        'lost', slotId);
+    });
+    // Notify winner
+    const slot = getSlot(slotId);
+    addNotification(winner,
+      `✅ You won the auction for ${slot?.flag} ${slot?.name}!`,
+      'win', slotId);
   });
 
   state.auctionLocked = true;
-  await saveToFirebase('shared', { auctionLocked: true, owners: state.owners });
-  showToast('Auction locked — squads confirmed! 🔒', 'success');
+  await saveToFirebase({ auctionLocked:true, owners:state.owners, collection:state.collection, notifications:state.notifications });
+  showToast('Auction locked — squads confirmed! 🔒','success');
   renderAuction();
 }
 
 // ============================================
-// MY SQUAD
+// MY PICKS
 // ============================================
 function renderMyPicks() {
   const container = document.getElementById('mypicks-container');
   if (!container) return;
   container.innerHTML = '';
 
-  const mySlotIds = getTeamsOwned(currentUser);
-  const totalPoints = state.playerPoints[currentUser] || 0;
+  const myCol    = getCollection(currentUser);
   const coinsSpent = getCoinsSpent(currentUser);
-  const coinsLeft = getCoinsRemaining(currentUser);
 
-  // Summary bar
   const summary = document.createElement('div');
   summary.className = 'squad-summary';
   summary.innerHTML = `
@@ -582,81 +554,57 @@ function renderMyPicks() {
       <div class="squad-stat-lbl">coins spent</div>
     </div>
     <div class="squad-stat">
-      <div class="squad-stat-val">🪙 ${coinsLeft}</div>
+      <div class="squad-stat-val">🪙 ${getCoinsRemaining(currentUser)}</div>
       <div class="squad-stat-lbl">coins left</div>
     </div>
     <div class="squad-stat">
-      <div class="squad-stat-val" style="color:var(--gold)">⭐ ${totalPoints}</div>
-      <div class="squad-stat-lbl">points earned</div>
+      <div class="squad-stat-val" style="color:var(--gold)">🏳️ ${myCol.length}</div>
+      <div class="squad-stat-lbl">total teams</div>
     </div>
     <div class="squad-stat">
-      <div class="squad-stat-val">${mySlotIds.length} / ${MIN_TEAMS}</div>
-      <div class="squad-stat-lbl">teams owned</div>
-    </div>
-  `;
+      <div class="squad-stat-val" style="color:var(--bet)">${myCol.filter(c=>c.how==='stolen'||c.how==='collected').length}</div>
+      <div class="squad-stat-lbl">stolen/collected</div>
+    </div>`;
   container.appendChild(summary);
 
-  if (mySlotIds.length === 0) {
+  if (myCol.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'squad-empty';
-    empty.innerHTML = `
-      <div style="font-size:2.5rem;margin-bottom:12px">🏴‍☠️</div>
-      <div style="font-size:1rem;font-weight:600;margin-bottom:6px">No teams yet!</div>
-      <div style="color:var(--text2);font-size:.88rem">Head to the Auction tab to place your bids.</div>
-    `;
+    empty.innerHTML = `<div style="font-size:2.5rem;margin-bottom:12px">🏴‍☠️</div><div style="font-weight:600;margin-bottom:6px">No teams yet!</div><div style="color:var(--text2);font-size:.88rem">Head to the Auction tab to place your bids.</div>`;
     container.appendChild(empty);
-    return;
+  } else {
+    const grid = document.createElement('div');
+    grid.className = 'squad-grid';
+    myCol.forEach(({ slotId, how }) => {
+      const slot = getSlot(slotId);
+      const isEliminated = Object.values(state.matchResults).some(r => r.loserSlot === slotId);
+      const card = document.createElement('div');
+      card.className = 'squad-card' + (isEliminated ? ' squad-eliminated' : '') + (how === 'original' ? ' squad-original' : ' squad-stolen');
+      const howLabel = how === 'original' ? '🟢 Bought' : how === 'stolen' ? '🟣 Stolen' : '🟣 Collected';
+      card.innerHTML = `
+        <div class="squad-flag">${slot?.flag||'🏳️'}</div>
+        <div class="squad-name">${slot?.name||slotId}</div>
+        <div class="squad-how">${howLabel}</div>
+        ${isEliminated ? '<div class="squad-status eliminated">❌ Eliminated</div>' : '<div class="squad-status active">✅ Still in</div>'}`;
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
   }
 
-  const grid = document.createElement('div');
-  grid.className = 'squad-grid';
-
-  mySlotIds.forEach(slotId => {
-    const slot = getSlot(slotId);
-    const owner = state.owners[slotId];
-    const isEliminated = state.eliminatedSlots.includes(slotId);
-
-    // Calculate points earned from this team
-    let teamPts = 0;
-    Object.entries(state.matchResults).forEach(([matchId, result]) => {
-      if (result.winnerSlot === slotId) {
-        const round = matchId.startsWith('r32') ? WIN_POINTS_R32 : WIN_POINTS_R16;
-        teamPts += round;
-      }
-    });
-
-    const card = document.createElement('div');
-    card.className = 'squad-card' + (isEliminated ? ' squad-eliminated' : '');
-    card.innerHTML = `
-      <div class="squad-flag">${slot?.flag || '🏳️'}</div>
-      <div class="squad-name">${slot?.name || slotId}</div>
-      <div class="squad-coins">🪙 ${owner?.coins || 0} coins invested</div>
-      ${isEliminated
-        ? `<div class="squad-status eliminated">❌ Eliminated</div>`
-        : `<div class="squad-status active">✅ Still in</div>`
-      }
-      ${teamPts > 0 ? `<div class="squad-pts">+${teamPts} pts earned</div>` : ''}
-    `;
-    grid.appendChild(card);
-  });
-
-  container.appendChild(grid);
-
-  // Pending bids (not yet won)
-  const pendingBids = Object.entries(state.bids)
+  // Pending bids
+  const pending = Object.entries(state.bids)
     .filter(([slotId, bids]) => bids[currentUser] && !state.owners[slotId])
     .map(([slotId, bids]) => ({ slotId, amount: bids[currentUser] }));
 
-  if (pendingBids.length > 0) {
-    const pendingTitle = document.createElement('div');
-    pendingTitle.className = 'auction-section-title';
-    pendingTitle.style.marginTop = '28px';
-    pendingTitle.textContent = '⏳ Pending Bids';
-    container.appendChild(pendingTitle);
-
-    const pendingGrid = document.createElement('div');
-    pendingGrid.className = 'squad-grid';
-    pendingBids.forEach(({ slotId, amount }) => {
+  if (pending.length > 0) {
+    const pt = document.createElement('div');
+    pt.className = 'auction-section-title';
+    pt.style.marginTop = '28px';
+    pt.textContent = '⏳ Pending Bids';
+    container.appendChild(pt);
+    const pg = document.createElement('div');
+    pg.className = 'squad-grid';
+    pending.forEach(({ slotId, amount }) => {
       const slot = getSlot(slotId);
       const allBids = state.bids[slotId] || {};
       const topBid = Math.max(...Object.values(allBids));
@@ -664,16 +612,13 @@ function renderMyPicks() {
       const card = document.createElement('div');
       card.className = 'squad-card';
       card.innerHTML = `
-        <div class="squad-flag">${slot?.flag || '🏳️'}</div>
-        <div class="squad-name">${slot?.name || slotId}</div>
+        <div class="squad-flag">${slot?.flag||'🏳️'}</div>
+        <div class="squad-name">${slot?.name||slotId}</div>
         <div class="squad-coins">🪙 ${amount} coins bid</div>
-        <div class="squad-status ${isLeading ? 'active' : 'eliminated'}">
-          ${isLeading ? '🔥 Leading' : `⚠️ Outbid! (top: ${topBid})`}
-        </div>
-      `;
-      pendingGrid.appendChild(card);
+        <div class="squad-status ${isLeading?'active':'eliminated'}">${isLeading?'🔥 Leading':`⚠️ Outbid! (top: ${topBid})`}</div>`;
+      pg.appendChild(card);
     });
-    container.appendChild(pendingGrid);
+    container.appendChild(pg);
   }
 }
 
@@ -694,13 +639,13 @@ function renderResults() {
   grid.className = 'results-grid';
 
   r32Matches.forEach(match => {
-    const slotA = getSlot(match.slotA);
-    const slotB = getSlot(match.slotB);
-    const result = state.matchResults[match.id];
-    const ownerA = state.owners[match.slotA];
-    const ownerB = state.owners[match.slotB];
-    const playerA = ownerA ? PLAYERS.find(p => p.name === ownerA.username) : null;
-    const playerB = ownerB ? PLAYERS.find(p => p.name === ownerB.username) : null;
+    const slotA   = getSlot(match.slotA);
+    const slotB   = getSlot(match.slotB);
+    const result  = state.matchResults[match.id];
+    const holderA = getCurrentHolder(match.slotA);
+    const holderB = getCurrentHolder(match.slotB);
+    const pA = holderA ? PLAYERS.find(p=>p.name===holderA) : null;
+    const pB = holderB ? PLAYERS.find(p=>p.name===holderB) : null;
 
     const card = document.createElement('div');
     card.className = 'result-card';
@@ -713,122 +658,95 @@ function renderResults() {
           <div class="result-winner">✅ ${winner?.flag} ${winner?.name} won</div>
           <div class="result-loser">❌ ${loser?.flag} ${loser?.name} eliminated</div>
           <button class="bid-remove-btn" style="margin-top:8px" onclick="clearResult('${match.id}')">↩ Undo</button>
-        </div>
-      `;
+        </div>`;
     } else {
       card.innerHTML = `
         <div class="result-teams">
           <div class="result-team">
-            <span>${slotA?.flag || '🏳️'} ${slotA?.name || match.slotA}</span>
-            ${playerA ? `<span class="result-owner">${playerA.icon} ${ownerA.username}</span>` : '<span class="result-owner no-owner">unowned</span>'}
+            <span>${slotA?.flag||'🏳️'} ${slotA?.name||'TBD'}</span>
+            ${pA ? `<span class="result-owner">${pA.icon} ${holderA}</span>` : '<span class="result-owner no-owner">unowned</span>'}
           </div>
           <div class="result-vs">VS</div>
           <div class="result-team">
-            <span>${slotB?.flag || '🏳️'} ${slotB?.name || match.slotB}</span>
-            ${playerB ? `<span class="result-owner">${playerB.icon} ${ownerB.username}</span>` : '<span class="result-owner no-owner">unowned</span>'}
+            <span>${slotB?.flag||'🏳️'} ${slotB?.name||'TBD'}</span>
+            ${pB ? `<span class="result-owner">${pB.icon} ${holderB}</span>` : '<span class="result-owner no-owner">unowned</span>'}
           </div>
         </div>
         <div class="result-btns">
           <button class="result-pick-btn" onclick="recordResult('${match.id}','${match.slotA}','${match.slotB}')">
-            ${slotA?.flag || '🏳️'} ${slotA?.name || '?'} won
+            ${slotA?.flag||'🏳️'} ${slotA?.name||'?'} won
           </button>
           <button class="result-pick-btn" onclick="recordResult('${match.id}','${match.slotB}','${match.slotA}')">
-            ${slotB?.flag || '🏳️'} ${slotB?.name || '?'} won
+            ${slotB?.flag||'🏳️'} ${slotB?.name||'?'} won
           </button>
-        </div>
-      `;
+        </div>`;
     }
     grid.appendChild(card);
   });
-
   container.appendChild(grid);
 }
 
 window.recordResult = async function(matchId, winnerSlot, loserSlot) {
-  const winner = getSlot(winnerSlot);
-  const loser  = getSlot(loserSlot);
+  const winner     = getSlot(winnerSlot);
+  const loser      = getSlot(loserSlot);
   if (!confirm(`${winner?.name} beat ${loser?.name}?`)) return;
 
   state.matchResults[matchId] = { winnerSlot, loserSlot };
 
-  // Eliminate loser
-  if (!state.eliminatedSlots.includes(loserSlot)) {
-    state.eliminatedSlots.push(loserSlot);
-  }
+  const winnerHolder = getCurrentHolder(winnerSlot);
+  const loserHolder  = getCurrentHolder(loserSlot);
 
-  // Award points — proportional to coins invested
-  const winnerOwner = state.owners[winnerSlot];
-  const loserOwner  = state.owners[loserSlot];
+  if (winnerHolder) {
+    // Remove loser from loser's collection
+    if (loserHolder) {
+      state.collection[loserHolder] = (state.collection[loserHolder]||[]).filter(c => c.slotId !== loserSlot);
+      // Add loser team to winner's collection as 'stolen'
+      if (!state.collection[winnerHolder]) state.collection[winnerHolder] = [];
+      state.collection[winnerHolder].push({ slotId: loserSlot, how:'stolen' });
 
-  if (!state.playerPoints) state.playerPoints = {};
-
-  if (winnerOwner) {
-    const pts = winnerOwner.coins;
-    state.playerPoints[winnerOwner.username] = (state.playerPoints[winnerOwner.username] || 0) + pts;
-
-    if (loserOwner) {
-      const stolen = Math.round(loserOwner.coins * STEAL_PCT);
-      state.playerPoints[winnerOwner.username] += stolen;
-      // Loser actually loses stolen amount (can go negative)
-      state.playerPoints[loserOwner.username] = (state.playerPoints[loserOwner.username] || 0) - stolen;
-
-      // Notify winner
-      addNotification(
-        winnerOwner.username,
-        `✅ Your ${winner?.flag} ${winner?.name} beat ${loserOwner.username}'s ${loser?.flag} ${loser?.name} — you earned ${pts} pts + stole ${stolen} pts! 🔥`,
-        'win', winnerSlot
-      );
-      // Notify loser
-      addNotification(
-        loserOwner.username,
-        `💸 ${winnerOwner.username}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — they stole ${stolen} pts from you!`,
-        'stolen', loserSlot
-      );
-      showToast(`${winnerOwner.username} earned ${pts} pts + stole ${stolen} pts from ${loserOwner.username}! 🔥`, 'success');
+      addNotification(winnerHolder,
+        `🔥 Your ${winner?.flag} ${winner?.name} beat ${loserHolder}'s ${loser?.flag} ${loser?.name} — you stole them!`,
+        'steal', loserSlot);
+      addNotification(loserHolder,
+        `💸 ${winnerHolder}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — ${winnerHolder} stole your team!`,
+        'stolen', loserSlot);
+      showToast(`${winnerHolder} stole ${loser?.name} from ${loserHolder}! 🔥`,'success');
     } else {
-      addNotification(
-        winnerOwner.username,
-        `✅ Your ${winner?.flag} ${winner?.name} won — you earned ${pts} pts!`,
-        'win', winnerSlot
-      );
-      showToast(`${winnerOwner.username} earned ${pts} pts! ✅`, 'success');
+      // Loser was unowned — winner collects them
+      if (!state.collection[winnerHolder]) state.collection[winnerHolder] = [];
+      state.collection[winnerHolder].push({ slotId: loserSlot, how:'collected' });
+      addNotification(winnerHolder,
+        `✅ Your ${winner?.flag} ${winner?.name} beat ${loser?.flag} ${loser?.name} (unowned) — you collected them!`,
+        'collect', loserSlot);
+      showToast(`${winnerHolder} collected ${loser?.name}! ✅`,'success');
     }
-  } else if (loserOwner) {
-    // Unowned winner knocked out an owned team — no steal, just notify loser
-    const stolen = Math.round(loserOwner.coins * STEAL_PCT);
-    state.playerPoints[loserOwner.username] = (state.playerPoints[loserOwner.username] || 0) - stolen;
-    addNotification(
-      loserOwner.username,
-      `❌ Your ${loser?.flag} ${loser?.name} was eliminated — you lost ${stolen} pts`,
-      'loss', loserSlot
-    );
+  } else {
+    // Winner is unowned — if loser was owned, they just lose their team (disappears)
+    if (loserHolder) {
+      state.collection[loserHolder] = (state.collection[loserHolder]||[]).filter(c => c.slotId !== loserSlot);
+      addNotification(loserHolder,
+        `❌ Your ${loser?.flag} ${loser?.name} was knocked out by unowned ${winner?.flag} ${winner?.name} — your team is gone`,
+        'loss', loserSlot);
+      showToast(`${loser?.name} eliminated — ${loserHolder} loses their team`,'');
+    }
   }
 
-  await saveToFirebase('shared', {
+  await saveToFirebase({
     matchResults: state.matchResults,
-    eliminatedSlots: state.eliminatedSlots,
-    playerPoints: state.playerPoints,
+    collection:   state.collection,
     notifications: state.notifications,
   });
-
   renderResults();
   renderLeaderboard();
   renderMyPicks();
 };
 
 window.clearResult = async function(matchId) {
-  if (!confirm('Undo this result? Points will NOT be reversed automatically.')) return;
-  const result = state.matchResults[matchId];
-  if (result) {
-    state.eliminatedSlots = state.eliminatedSlots.filter(s => s !== result.loserSlot);
-    delete state.matchResults[matchId];
-    await saveToFirebase('shared', {
-      matchResults: state.matchResults,
-      eliminatedSlots: state.eliminatedSlots,
-    });
-    showToast('Result undone.', '');
-    renderResults();
-  }
+  if (!confirm('Undo this result? Collections will NOT be automatically reversed.')) return;
+  delete state.matchResults[matchId];
+  await saveToFirebase({ matchResults: state.matchResults });
+  showToast('Result undone.','');
+  renderResults();
 };
 
 // ============================================
@@ -839,59 +757,61 @@ function renderLeaderboard() {
   if (!container) return;
   container.innerHTML = '';
 
-  const scored = PLAYERS.map(player => {
-    const pts     = state.playerPoints[player.name] || 0;
-    const teams   = getTeamsOwned(player.name);
-    const alive   = teams.filter(s => !state.eliminatedSlots.includes(s));
-    const spent   = getCoinsSpent(player.name);
-    return { ...player, pts, teams, alive, spent };
-  }).sort((a, b) => b.pts - a.pts);
+  const scored = PLAYERS.map(p => ({
+    ...p,
+    total:    getTotalTeams(p.name),
+    original: getCollection(p.name).filter(c=>c.how==='original').length,
+    stolen:   getCollection(p.name).filter(c=>c.how==='stolen'||c.how==='collected').length,
+    col:      getCollection(p.name),
+  })).sort((a,b) => b.total - a.total);
 
-  const medals  = ['🥇','🥈','🥉','4️⃣','5️⃣','6️⃣','7️⃣'];
-  const classes = ['first','second','third','','','',''];
+  const medals  = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+  const classes = ['first','second','third','',''];
 
   scored.forEach((player, i) => {
     const row = document.createElement('div');
-    row.className = `leaderboard-row ${classes[i] || ''}`;
+    row.className = `leaderboard-row ${classes[i]||''}`;
 
-    const teamBadges = player.alive.map(slotId => {
+    const badges = player.col.map(({ slotId, how }) => {
       const slot = getSlot(slotId);
-      return `<span class="team-badge">${slot?.flag || '🏳️'} ${slot?.name || slotId}</span>`;
+      const isElim = Object.values(state.matchResults).some(r => r.loserSlot === slotId);
+      const cls = how === 'original' ? 'team-badge-green' : 'team-badge-purple';
+      return `<span class="team-badge ${cls}" style="${isElim?'opacity:.4':''}">
+        ${slot?.flag||'🏳️'} ${slot?.name||slotId}
+      </span>`;
     }).join('');
 
     row.innerHTML = `
       <div class="lb-position">${medals[i]}</div>
       <div class="lb-info">
         <div class="lb-name">${player.icon} ${player.name}</div>
-        <div class="lb-type">${player.isAI ? 'AI' : 'Human'} · ${player.teams.length} teams · 🪙${player.spent} spent</div>
-        ${teamBadges ? `<div class="lb-teams">${teamBadges}</div>` : '<div class="lb-breakdown" style="color:var(--text3);font-style:italic">No teams owned yet</div>'}
+        <div class="lb-type">${player.original} bought · ${player.stolen} stolen/collected</div>
+        ${badges ? `<div class="lb-teams">${badges}</div>` : '<div class="lb-breakdown" style="color:var(--text3);font-style:italic">No teams yet</div>'}
       </div>
       <div>
-        <div class="lb-points" style="color:var(--gold)">${player.pts}</div>
-        <div class="lb-pts-label">PTS</div>
-      </div>
-    `;
+        <div class="lb-points" style="color:var(--gold)">${player.total}</div>
+        <div class="lb-pts-label">TEAMS</div>
+      </div>`;
     container.appendChild(row);
   });
 
   if (Object.keys(state.matchResults).length === 0) {
     const note = document.createElement('div');
     note.className = 'leaderboard-empty';
-    note.innerHTML = '⚽ Points activate once match results are entered.';
+    note.innerHTML = '⚽ Teams update as match results are entered.';
     container.appendChild(note);
   }
 }
 
 // ============================================
-// INBOX / NOTIFICATIONS
+// INBOX
 // ============================================
 async function markAllRead() {
   const notifs = state.notifications[currentUser] || [];
   notifs.forEach(n => n.read = true);
   state.notifications[currentUser] = notifs;
-  await saveToFirebase('shared', { notifications: state.notifications });
-  renderInbox();
-  updateHeaderCoins();
+  await saveToFirebase({ notifications: state.notifications });
+  updateHeader();
 }
 window.markAllRead = markAllRead;
 
@@ -899,8 +819,8 @@ window.jumpToBid = function(slotId) {
   showSection('auction', { target: document.getElementById('nav-auction') });
   setTimeout(() => {
     const card = document.querySelector(`[data-slot-id="${slotId}"]`);
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 100);
+    if (card) card.scrollIntoView({ behavior:'smooth', block:'center' });
+  }, 150);
 };
 
 function renderInbox() {
@@ -908,46 +828,37 @@ function renderInbox() {
   if (!container) return;
   container.innerHTML = '';
 
-  const notifs = (state.notifications[currentUser] || []);
-  const unread = notifs.filter(n => !n.read).length;
+  const notifs = state.notifications[currentUser] || [];
+  const unread  = notifs.filter(n=>!n.read).length;
 
   if (notifs.length === 0) {
-    container.innerHTML = `
-      <div class="inbox-empty">
-        <div style="font-size:2.5rem;margin-bottom:12px">📭</div>
-        <div style="font-weight:600;margin-bottom:6px">All quiet here</div>
-        <div style="color:var(--text2);font-size:.88rem">Notifications about outbids and stolen points will appear here.</div>
-      </div>`;
+    container.innerHTML = `<div class="inbox-empty"><div style="font-size:2.5rem;margin-bottom:12px">📭</div><div style="font-weight:600;margin-bottom:6px">All quiet here</div><div style="color:var(--text2);font-size:.88rem">Outbid alerts and steal notifications will appear here.</div></div>`;
     return;
   }
 
   if (unread > 0) {
-    const markBtn = document.createElement('button');
-    markBtn.className = 'bid-btn';
-    markBtn.style.cssText = 'margin-bottom:16px;padding:8px 20px;';
-    markBtn.textContent = `Mark all as read (${unread})`;
-    markBtn.onclick = markAllRead;
-    container.appendChild(markBtn);
+    const btn = document.createElement('button');
+    btn.className = 'bid-btn';
+    btn.style.cssText = 'margin-bottom:16px;padding:8px 20px;';
+    btn.textContent = `Mark all as read (${unread})`;
+    btn.onclick = () => { markAllRead(); renderInbox(); };
+    container.appendChild(btn);
   }
 
   notifs.forEach(n => {
     const item = document.createElement('div');
-    item.className = `inbox-item ${n.read ? 'inbox-read' : 'inbox-unread'} inbox-${n.type}`;
-
+    item.className = `inbox-item ${n.read?'inbox-read':'inbox-unread'} inbox-${n.type}`;
     const ts = new Date(n.ts);
-    const timeStr = ts.toLocaleDateString('en-ZA', { day:'numeric', month:'short' }) +
-      ' · ' + ts.toLocaleTimeString('en-ZA', { hour:'2-digit', minute:'2-digit' });
-
+    const timeStr = ts.toLocaleDateString('en-ZA',{day:'numeric',month:'short'}) + ' · ' + ts.toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
     item.innerHTML = `
       <div class="inbox-msg">${n.msg}</div>
       <div class="inbox-meta">
         ${!n.read ? '<span class="inbox-dot"></span>' : ''}
         <span class="inbox-time">${timeStr}</span>
-        ${n.slotId && n.type === 'outbid' && !state.auctionLocked
+        ${n.slotId && n.type==='outbid' && !state.auctionLocked
           ? `<button class="inbox-action-btn" onclick="jumpToBid('${n.slotId}')">Up my bid →</button>`
           : ''}
-      </div>
-    `;
+      </div>`;
     container.appendChild(item);
   });
 }
@@ -961,38 +872,33 @@ function renderRules() {
   container.innerHTML = `
     <div class="rules-block">
       <h3>A completely different game</h3>
-      <p>Forget score predictions — the Round of 32 is an auction. You buy teams. Your teams earn you points as they win. No predicting, just strategy and drama.</p>
+      <p>Forget score predictions. The Round of 32 is a territory game. You buy teams at auction, then watch who ends up with the most flags when all 16 matches are done.</p>
     </div>
     <div class="rules-block">
-      <h3>🪙 Your Budget</h3>
-      <p>Every player starts with <strong>100 coins</strong>. That's it. Spend wisely — you can never get more.</p>
+      <h3>🪙 The Auction</h3>
+      <p>Everyone starts with <strong>100 coins</strong>. All 32 teams are up for bid simultaneously. Highest bid wins. You must own at least 3 teams. Minimum bid is 5 coins.</p>
     </div>
     <div class="rules-block">
-      <h3>🔨 How Bidding Works</h3>
-      <p>All 32 teams are up for auction simultaneously. Place bids on as many teams as you want. When the auction closes, the highest bidder on each team wins that team. Outbid someone and they lose the team!</p>
+      <h3>🟢 Bought vs 🟣 Stolen</h3>
+      <p>Teams you win in the auction show with a <strong style="color:var(--teal)">green border</strong>. Teams you steal or collect during the tournament show with a <strong style="color:var(--bet)">purple border</strong>. Both count toward your total.</p>
+    </div>
+    <div class="rules-block">
+      <h3>What happens when teams play?</h3>
       <div class="rules-scoring">
-        <div class="rules-score-row"><span class="score-badge gold">Rule 1</span> Highest bid wins the team</div>
-        <div class="rules-score-row"><span class="score-badge gold">Rule 2</span> You must own at least 3 teams</div>
-        <div class="rules-score-row"><span class="score-badge gold">Rule 3</span> You can't spend more coins than you have</div>
+        <div class="rules-score-row"><span class="score-badge gold">🔥 Steal</span> Your team beats someone else's owned team → you steal their team</div>
+        <div class="rules-score-row"><span class="score-badge gold">✅ Collect</span> Your team beats an unowned team → you collect that team</div>
+        <div class="rules-score-row"><span class="score-badge neutral">❌ Lose</span> Your team loses → your team disappears, nobody gets it</div>
+        <div class="rules-score-row"><span class="score-badge neutral">👻 Void</span> Unowned team beats unowned team → nothing changes</div>
       </div>
     </div>
     <div class="rules-block">
-      <h3>⭐ Earning Points</h3>
-      <p>When your team wins a match, you earn points equal to <strong>the coins you spent on them</strong>. Spent 40 coins on France? France win → you earn 40 points. This means big bets on big teams carry big rewards.</p>
+      <h3>🏆 How to Win</h3>
+      <p>Most teams at the end of the Round of 32 wins. Simple. Back the right teams in the auction and you'll end up with a bigger collection than anyone else.</p>
     </div>
     <div class="rules-block">
-      <h3>🔥 The Steal</h3>
-      <p>Here's where it gets spicy. When your team knocks out someone else's team, you steal <strong>30% of their coin investment</strong> as bonus points. So if Zac spent 30 coins on Ivory Coast and your France knock them out, you earn your own points PLUS 9 stolen points from Zac. 😈</p>
-    </div>
-    <div class="rules-block">
-      <h3>⏳ TBD Slots</h3>
-      <p>Some slots aren't confirmed yet — they show two possible teams (e.g. "Ghana or Panama"). You can still bid on them now! Once the group stage confirms the team, your bid stays on that slot.</p>
-    </div>
-    <div class="rules-block">
-      <h3>The Strategy</h3>
-      <p>Go all-in on France? You'll earn big if they win every match — but you'll have little left for backup teams. Spread across 5 dark horses? You're earning from multiple matches simultaneously. The auction IS the game.</p>
-    </div>
-  `;
+      <h3>📬 Inbox</h3>
+      <p>Check your inbox — you'll get notified when someone outbids you during the auction, when your team steals another, or when your team gets eliminated.</p>
+    </div>`;
 }
 
 // ============================================
@@ -1011,7 +917,7 @@ function showLoading(show) {
   }
 }
 
-function showToast(msg, type = '') {
+function showToast(msg, type='') {
   const toast = document.getElementById('toast');
   toast.textContent = msg;
   toast.className = `toast ${type}`;
@@ -1020,22 +926,16 @@ function showToast(msg, type = '') {
 }
 
 async function resetEverything() {
-  if (!confirm('⚠️ RESET ALL AUCTION DATA? Cannot be undone!')) return;
+  if (!confirm('⚠️ RESET ALL AUCTION DATA?')) return;
   if (!confirm('100% sure?')) return;
   showLoading(true);
-  await setDoc(doc(db, 'worldcup2026_r32', 'shared'), {
-    bids: {}, owners: {}, auctionLocked: false,
-    matchResults: {}, playerPoints: {}, eliminatedSlots: [], slotOverrides: {}, notifications: {}
+  await setDoc(doc(db,'worldcup2026_r32','shared'), {
+    bids:{}, owners:{}, collection:{}, auctionLocked:false,
+    matchResults:{}, slotOverrides:{}, notifications:{}
   });
-  state = {
-    bids:{}, owners:{}, auctionLocked:false,
-    matchResults:{}, playerPoints:{}, eliminatedSlots:[], slotOverrides:{}, notifications:{}
-  };
+  state = { bids:{}, owners:{}, collection:{}, auctionLocked:false, matchResults:{}, slotOverrides:{}, notifications:{} };
   showLoading(false);
-  showToast('🗑️ All auction data reset!', 'success');
-  renderAuction();
-  renderMyPicks();
-  renderLeaderboard();
-  updateHeaderCoins();
+  showToast('🗑️ All data reset!','success');
+  renderAuction(); renderMyPicks(); renderLeaderboard(); updateHeader();
 }
 window.resetEverything = resetEverything;
