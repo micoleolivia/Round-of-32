@@ -30,6 +30,7 @@ const PLAYERS = [
 
 const STARTING_COINS = 100;
 const MIN_TEAMS      = 3;
+const STEAL_PCT      = 0.5;  // 50% of loser's coins stolen as points
 
 // ============================================
 // ROUND OF 32 SLOTS
@@ -100,6 +101,7 @@ let state = {
   matchResults: {},  // matchResults[matchId] = { winnerSlot, loserSlot }
   slotOverrides:{},  // slotOverrides[slotId] = { name, flag }
   notifications:{},  // notifications[username] = [{ id, msg, type, ts, read, slotId }]
+  playerPoints:{},   // playerPoints[username] = tiebreaker points
 };
 
 let unsubscribe = null;
@@ -132,6 +134,7 @@ function startLiveListener() {
       state.matchResults  = d.matchResults  || {};
       state.slotOverrides = d.slotOverrides || {};
       state.notifications = d.notifications || {};
+      state.playerPoints  = d.playerPoints  || {};
       refreshAll();
     }
   });
@@ -227,6 +230,7 @@ async function login(name) {
   state.matchResults  = d.matchResults  || {};
   state.slotOverrides = d.slotOverrides || {};
   state.notifications = d.notifications || {};
+  state.playerPoints  = d.playerPoints  || {};
 
   currentUser = name;
   const isAdmin = name === 'Micole';
@@ -692,37 +696,57 @@ window.recordResult = async function(matchId, winnerSlot, loserSlot) {
   if (!confirm(`${winner?.name} beat ${loser?.name}?`)) return;
 
   state.matchResults[matchId] = { winnerSlot, loserSlot };
+  if (!state.playerPoints) state.playerPoints = {};
 
   const winnerHolder = getCurrentHolder(winnerSlot);
   const loserHolder  = getCurrentHolder(loserSlot);
 
-  if (winnerHolder) {
-    // Remove loser from loser's collection
+  // Get original auction coins for points calculation
+  const winnerCoins = state.owners[winnerSlot]?.coins || 0;
+  const loserCoins  = state.owners[loserSlot]?.coins  || 0;
+  const stolen      = Math.round(loserCoins * STEAL_PCT);
+
+  if (winnerHolder && loserHolder && winnerHolder === loserHolder) {
+    // SELF-OWN: same person owns both teams — winner stays, loser just disappears
+    state.collection[winnerHolder] = (state.collection[winnerHolder]||[]).filter(c => c.slotId !== loserSlot);
+    // Still earn points for winning
+    state.playerPoints[winnerHolder] = (state.playerPoints[winnerHolder]||0) + winnerCoins;
+    addNotification(winnerHolder,
+      `⚽ Your ${winner?.flag} ${winner?.name} beat your own ${loser?.flag} ${loser?.name} — ${loser?.name} is eliminated, you earned ${winnerCoins} pts`,
+      'win', winnerSlot);
+    showToast(`${winner?.name} beat your own ${loser?.name} — ${loser?.name} eliminated`,'');
+
+  } else if (winnerHolder) {
+    // Winner is owned
+    // Points: winner earns their coins, steals 50% of loser's coins
+    state.playerPoints[winnerHolder] = (state.playerPoints[winnerHolder]||0) + winnerCoins + stolen;
+
     if (loserHolder) {
+      // Loser is owned by someone else — steal their team + points
       state.collection[loserHolder] = (state.collection[loserHolder]||[]).filter(c => c.slotId !== loserSlot);
-      // Add loser team to winner's collection as 'stolen'
       if (!state.collection[winnerHolder]) state.collection[winnerHolder] = [];
       state.collection[winnerHolder].push({ slotId: loserSlot, how:'stolen' });
 
       addNotification(winnerHolder,
-        `🔥 Your ${winner?.flag} ${winner?.name} beat ${loserHolder}'s ${loser?.flag} ${loser?.name} — you stole them!`,
+        `🔥 Your ${winner?.flag} ${winner?.name} beat ${loserHolder}'s ${loser?.flag} ${loser?.name} — you stole their team + ${winnerCoins + stolen} pts!`,
         'steal', loserSlot);
       addNotification(loserHolder,
-        `💸 ${winnerHolder}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — ${winnerHolder} stole your team!`,
+        `💸 ${winnerHolder}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — ${winnerHolder} stole your team and ${stolen} pts!`,
         'stolen', loserSlot);
-      showToast(`${winnerHolder} stole ${loser?.name} from ${loserHolder}! 🔥`,'success');
+      showToast(`${winnerHolder} stole ${loser?.name} from ${loserHolder}! +${winnerCoins + stolen} pts 🔥`,'success');
     } else {
-      // Loser was unowned — winner collects them
+      // Loser unowned — winner just collects them, no stolen points
       if (!state.collection[winnerHolder]) state.collection[winnerHolder] = [];
       state.collection[winnerHolder].push({ slotId: loserSlot, how:'collected' });
       addNotification(winnerHolder,
-        `✅ Your ${winner?.flag} ${winner?.name} beat ${loser?.flag} ${loser?.name} (unowned) — you collected them!`,
+        `✅ Your ${winner?.flag} ${winner?.name} beat unowned ${loser?.flag} ${loser?.name} — collected! +${winnerCoins} pts`,
         'collect', loserSlot);
-      showToast(`${winnerHolder} collected ${loser?.name}! ✅`,'success');
+      showToast(`${winnerHolder} collected ${loser?.name}! +${winnerCoins} pts ✅`,'success');
     }
   } else {
-    // Winner is unowned — if loser was owned, they just lose their team (disappears)
+    // Winner is unowned
     if (loserHolder) {
+      // Loser owned but beaten by unowned team — team just disappears, no steal
       state.collection[loserHolder] = (state.collection[loserHolder]||[]).filter(c => c.slotId !== loserSlot);
       addNotification(loserHolder,
         `❌ Your ${loser?.flag} ${loser?.name} was knocked out by unowned ${winner?.flag} ${winner?.name} — your team is gone`,
@@ -732,9 +756,10 @@ window.recordResult = async function(matchId, winnerSlot, loserSlot) {
   }
 
   await saveToFirebase({
-    matchResults: state.matchResults,
-    collection:   state.collection,
+    matchResults:  state.matchResults,
+    collection:    state.collection,
     notifications: state.notifications,
+    playerPoints:  state.playerPoints,
   });
   renderResults();
   renderLeaderboard();
@@ -760,10 +785,11 @@ function renderLeaderboard() {
   const scored = PLAYERS.map(p => ({
     ...p,
     total:    getTotalTeams(p.name),
+    pts:      state.playerPoints[p.name] || 0,
     original: getCollection(p.name).filter(c=>c.how==='original').length,
     stolen:   getCollection(p.name).filter(c=>c.how==='stolen'||c.how==='collected').length,
     col:      getCollection(p.name),
-  })).sort((a,b) => b.total - a.total);
+  })).sort((a,b) => b.total !== a.total ? b.total - a.total : b.pts - a.pts);
 
   const medals  = ['🥇','🥈','🥉','4️⃣','5️⃣'];
   const classes = ['first','second','third','',''];
@@ -785,12 +811,13 @@ function renderLeaderboard() {
       <div class="lb-position">${medals[i]}</div>
       <div class="lb-info">
         <div class="lb-name">${player.icon} ${player.name}</div>
-        <div class="lb-type">${player.original} bought · ${player.stolen} stolen/collected</div>
+        <div class="lb-type">${player.original} bought · ${player.stolen} stolen/collected · ${player.pts} pts</div>
         ${badges ? `<div class="lb-teams">${badges}</div>` : '<div class="lb-breakdown" style="color:var(--text3);font-style:italic">No teams yet</div>'}
       </div>
-      <div>
+      <div style="text-align:right">
         <div class="lb-points" style="color:var(--gold)">${player.total}</div>
         <div class="lb-pts-label">TEAMS</div>
+        <div style="font-size:.72rem;color:var(--text3);margin-top:2px">${player.pts} pts</div>
       </div>`;
     container.appendChild(row);
   });
@@ -892,8 +919,21 @@ function renderRules() {
       </div>
     </div>
     <div class="rules-block">
+      <h3>⭐ Points (Tiebreaker)</h3>
+      <p>Points run alongside the territory game as a tiebreaker. When your team wins you earn points equal to the coins you spent on them. When you steal someone's team you also steal <strong>50% of their coin investment</strong> as bonus points. If two players are tied on teams, the higher points total wins.</p>
+      <div class="rules-scoring">
+        <div class="rules-score-row"><span class="score-badge gold">Win</span> Earn points = coins you spent on that team</div>
+        <div class="rules-score-row"><span class="score-badge gold">Steal</span> Earn win points + 50% of loser's coin investment</div>
+        <div class="rules-score-row"><span class="score-badge neutral">Collect</span> Earn win points only (unowned team, no steal bonus)</div>
+      </div>
+    </div>
+    <div class="rules-block">
       <h3>🏆 How to Win</h3>
-      <p>Most teams at the end of the Round of 32 wins. Simple. Back the right teams in the auction and you'll end up with a bigger collection than anyone else.</p>
+      <p><strong>Primary:</strong> Most teams collected wins. <strong>Tiebreaker:</strong> Most points wins. Back the right teams in the auction and you'll end up with a bigger collection AND more points than anyone else.</p>
+    </div>
+    <div class="rules-block">
+      <h3>⚽ What if I own both teams in a match?</h3>
+      <p>Your winning team stays, your losing team is eliminated. No stealing from yourself! You still earn points for the win though.</p>
     </div>
     <div class="rules-block">
       <h3>📬 Inbox</h3>
@@ -931,9 +971,9 @@ async function resetEverything() {
   showLoading(true);
   await setDoc(doc(db,'worldcup2026_r32','shared'), {
     bids:{}, owners:{}, collection:{}, auctionLocked:false,
-    matchResults:{}, slotOverrides:{}, notifications:{}
+    matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{}
   });
-  state = { bids:{}, owners:{}, collection:{}, auctionLocked:false, matchResults:{}, slotOverrides:{}, notifications:{} };
+  state = { bids:{}, owners:{}, collection:{}, auctionLocked:false, matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{} };
   showLoading(false);
   showToast('🗑️ All data reset!','success');
   renderAuction(); renderMyPicks(); renderLeaderboard(); updateHeader();
