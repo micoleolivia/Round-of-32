@@ -168,6 +168,7 @@ function refreshAll() {
 // COIN HELPERS
 // ============================================
 function getCoinsSpent(username) {
+  // Only count confirmed owned teams
   let spent = 0;
   Object.values(state.owners).forEach(o => {
     if (o.username === username) spent += o.coins;
@@ -175,8 +176,19 @@ function getCoinsSpent(username) {
   return spent;
 }
 
+function getCoinsCommitted(username) {
+  // Coins tied up in active bids on unowned slots
+  let committed = 0;
+  Object.entries(state.bids).forEach(([slotId, bids]) => {
+    if (state.owners[slotId]) return;
+    if (bids[username]) committed += bids[username];
+  });
+  return committed;
+}
+
 function getCoinsRemaining(username) {
-  return STARTING_COINS - getCoinsSpent(username);
+  // Available = starting minus confirmed purchases minus active bids
+  return STARTING_COINS - getCoinsSpent(username) - getCoinsCommitted(username);
 }
 
 function getTeamsOwned(username) {
@@ -380,22 +392,24 @@ function buildSlotCard(slot, isAdmin) {
     bidSection.className = 'bid-section';
 
     if (myBid > 0) {
+      // coinsLeft already excludes myBid via getCoinsCommitted, so max = coinsLeft + myBid (upgrading existing bid)
+      const upgradeMax = coinsLeft + myBid;
       bidSection.innerHTML = `
         <div class="my-bid-display">Your bid: <strong>${myBid} coins</strong></div>
         <div class="bid-row">
-          <input type="number" min="1" max="${Math.max(coinsLeft + myBid, myBid)}" value="${myBid}" id="bid-input-${slot.id}" class="bid-input"/>
+          <input type="number" min="${Math.min(myBid,1)}" max="${upgradeMax}" value="${myBid}" id="bid-input-${slot.id}" class="bid-input"/>
           <button class="bid-btn" onclick="placeBid('${slot.id}')">Update</button>
           <button class="bid-remove-btn" onclick="removeBid('${slot.id}')">✕</button>
         </div>
-        <div class="bid-hint">min ${topBid + 1} to lead · ${coinsLeft + myBid} coins available</div>
+        <div class="bid-hint">min ${topBid + 1} to lead · ${upgradeMax} coins available to bid</div>
       `;
     } else {
       bidSection.innerHTML = `
         <div class="bid-row">
-          <input type="number" min="1" max="${coinsLeft}" value="${Math.min(topBid + 1, coinsLeft)}" id="bid-input-${slot.id}" class="bid-input"/>
+          <input type="number" min="5" max="${coinsLeft}" value="${Math.min(Math.max(topBid + 1, 5), coinsLeft)}" id="bid-input-${slot.id}" class="bid-input"/>
           <button class="bid-btn" onclick="placeBid('${slot.id}')">Bid 🪙</button>
         </div>
-        <div class="bid-hint">${topBid > 0 ? `min ${topBid + 1} to lead · ` : ''}${coinsLeft} coins available</div>
+        <div class="bid-hint">${topBid > 0 ? `min ${topBid + 1} to lead · ` : 'min 5 coins · '}${coinsLeft} coins available</div>
       `;
     }
     card.appendChild(bidSection);
@@ -440,11 +454,11 @@ function buildSlotCard(slot, isAdmin) {
 window.placeBid = async function(slotId) {
   const input = document.getElementById(`bid-input-${slotId}`);
   const amount = parseInt(input?.value);
-  if (isNaN(amount) || amount < 1) { showToast('Enter a valid bid!', 'error'); return; }
-
   const myCurrentBid = (state.bids[slotId] || {})[currentUser] || 0;
+  // When updating a bid, coins available = remaining + what we already committed here
   const coinsAvailable = getCoinsRemaining(currentUser) + myCurrentBid;
 
+  if (isNaN(amount) || amount < 5) { showToast('Minimum bid is 5 coins!', 'error'); return; }
   if (amount > coinsAvailable) {
     showToast(`Not enough coins! You have ${coinsAvailable} available.`, 'error'); return;
   }
