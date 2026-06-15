@@ -224,3 +224,6 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .lb-scores{display:flex;align-items:center;gap:8px;flex-shrink:0}
 .lb-score-col{text-align:right;min-width:44px}
 .lb-score-divider{width:1px;height:32px;background:var(--border);flex-shrink:0}
+
+/* AUCTION WARNING BANNER */
+.auction-warning-banner{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.4);color:var(--gold);font-size:.8rem;font-weight:600;padding:8px 14px;border-radius:var(--radius);text-align:center;width:100%}
