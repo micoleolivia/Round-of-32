@@ -941,7 +941,7 @@ function renderRules() {
       <div class="rules-scoring">
         <div class="rules-score-row"><span class="score-badge gold">🔥 Steal</span> Your team beats someone else's owned team → you steal their team</div>
         <div class="rules-score-row"><span class="score-badge gold">✅ Collect</span> Your team beats an unowned team → you collect that team</div>
-        <div class="rules-score-row"><span class="score-badge neutral">❌ Lose</span> Your team loses → your team disappears, nobody gets it</div>
+        <div class="rules-score-row"><span class="score-badge neutral">❌ Lose</span> Your team loses to an unowned team → your team disappears, nobody gets it</div>
         <div class="rules-score-row"><span class="score-badge neutral">👻 Void</span> Unowned team beats unowned team → nothing changes</div>
       </div>
     </div>
