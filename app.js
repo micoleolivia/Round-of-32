@@ -29,7 +29,7 @@ const PLAYERS = [
 ];
 
 const STARTING_COINS = 100;
-const MIN_TEAMS      = 3;
+const MIN_TEAMS      = 5;
 const STEAL_PCT      = 0.5;  // 50% of loser's coins stolen as points
 const WIN_POINTS     = 10;   // flat points for any win
 
@@ -308,6 +308,13 @@ function renderAuction() {
         <div class="auction-stat-lbl">required</div>
       </div>
       ${state.auctionLocked ? '<div class="auction-locked-banner">🔒 Auction closed — squads are final</div>' : ''}
+      ${!state.auctionLocked && (() => {
+        const myBidCount = Object.values(state.bids).filter(bids => bids[currentUser]).length;
+        const remaining = MIN_TEAMS - myBidCount;
+        return remaining > 0
+          ? `<div class="auction-warning-banner">⚠️ You need at least ${MIN_TEAMS} bids — place ${remaining} more!</div>`
+          : '';
+      })()}
     </div>`;
 
   container.innerHTML = '';
