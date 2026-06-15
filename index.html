@@ -54,6 +54,7 @@
         <button id="nav-rules"     class="nav-btn" onclick="showSection('rules',event)">Rules</button>
         <button id="nav-auction"   class="nav-btn" onclick="showSection('auction',event)">🔨 Auction</button>
         <button id="nav-mypicks"   class="nav-btn" onclick="showSection('mypicks',event)">My Squad</button>
+        <button id="nav-inbox"     class="nav-btn" onclick="showSection('inbox',event)">📭 Inbox</button>
         <button id="nav-results"   class="nav-btn hidden" onclick="showSection('results',event)">Results</button>
         <button id="nav-leaderboard" class="nav-btn" onclick="showSection('leaderboard',event)">Leaderboard</button>
       </nav>
@@ -89,6 +90,15 @@
         <p>Teams you own and your points so far</p>
       </div>
       <div id="mypicks-container"></div>
+    </section>
+
+    <!-- INBOX -->
+    <section id="inbox" class="section hidden">
+      <div class="section-header">
+        <h2>📬 Inbox</h2>
+        <p>Outbid alerts and stolen points notifications</p>
+      </div>
+      <div id="inbox-container"></div>
     </section>
 
     <!-- RESULTS (admin) -->
