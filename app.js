@@ -924,6 +924,15 @@ function renderRules() {
       <p style="margin-top:8px">Spread your coins. More teams means more matches, more steals, and more chances to win 🏴 — but also more exposure to losing points. See the points rules below!</p>
     </div>
     <div class="rules-block">
+      <h3>⭐ Points (Tiebreaker)</h3>
+      <p>Points run alongside the territory game as a tiebreaker. When your team wins you earn points equal to the coins you spent on them. When you steal someone's team you also steal <strong>50% of their coin investment</strong> as bonus points. If two players are tied on teams, the higher points total wins.</p>
+      <div class="rules-scoring">
+        <div class="rules-score-row"><span class="score-badge gold">Win</span> Earn points = coins you spent on that team</div>
+        <div class="rules-score-row"><span class="score-badge gold">Steal</span> Earn win points + 50% of loser's coin investment</div>
+        <div class="rules-score-row"><span class="score-badge neutral">Collect</span> Earn win points only (unowned team, no steal bonus)</div>
+      </div>
+    </div>
+    <div class="rules-block">
       <h3>🟢 Bought vs 🟣 Stolen</h3>
       <p>Teams you win in the auction show with a <strong style="color:var(--teal)">green border</strong>. Teams you steal or collect during the tournament show with a <strong style="color:var(--bet)">purple border</strong>. Both count toward your total.</p>
     </div>
@@ -936,15 +945,7 @@ function renderRules() {
         <div class="rules-score-row"><span class="score-badge neutral">👻 Void</span> Unowned team beats unowned team → nothing changes</div>
       </div>
     </div>
-    <div class="rules-block">
-      <h3>⭐ Points (Tiebreaker)</h3>
-      <p>Points run alongside the territory game as a tiebreaker. When your team wins you earn points equal to the coins you spent on them. When you steal someone's team you also steal <strong>50% of their coin investment</strong> as bonus points. If two players are tied on teams, the higher points total wins.</p>
-      <div class="rules-scoring">
-        <div class="rules-score-row"><span class="score-badge gold">Win</span> Earn points = coins you spent on that team</div>
-        <div class="rules-score-row"><span class="score-badge gold">Steal</span> Earn win points + 50% of loser's coin investment</div>
-        <div class="rules-score-row"><span class="score-badge neutral">Collect</span> Earn win points only (unowned team, no steal bonus)</div>
-      </div>
-    </div>
+
     <div class="rules-block">
       <h3>🏆 How to Win</h3>
       <p><strong>Primary:</strong> Most teams collected wins. <strong>Tiebreaker:</strong> Most points wins. Back the right teams in the auction and you'll end up with a bigger collection AND more points than anyone else.</p>
