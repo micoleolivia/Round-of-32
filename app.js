@@ -29,7 +29,7 @@ const PLAYERS = [
 ];
 
 const STARTING_COINS = 100;
-const MIN_TEAMS      = 5;
+const MIN_TEAMS      = 0;  // No minimum — more teams = more chances
 const STEAL_PCT      = 0.5;  // 50% of loser's coins stolen as points
 const WIN_POINTS     = 10;   // flat points for any win
 
@@ -301,20 +301,9 @@ function renderAuction() {
         <div class="auction-stat-val">🏳️ ${teamCount}</div>
         <div class="auction-stat-lbl">teams owned</div>
       </div>
-      <div class="auction-stat">
-        <div class="auction-stat-val" style="color:${teamCount>=MIN_TEAMS?'var(--teal)':'var(--red)'}">
-          ${teamCount>=MIN_TEAMS?'✅':'⚠️'} ${MIN_TEAMS} min
-        </div>
-        <div class="auction-stat-lbl">required</div>
-      </div>
+
       ${state.auctionLocked ? '<div class="auction-locked-banner">🔒 Auction closed — squads are final</div>' : ''}
-      ${!state.auctionLocked && (() => {
-        const myBidCount = Object.values(state.bids).filter(bids => bids[currentUser]).length;
-        const remaining = MIN_TEAMS - myBidCount;
-        return remaining > 0
-          ? `<div class="auction-warning-banner">⚠️ You need at least ${MIN_TEAMS} bids — place ${remaining} more!</div>`
-          : '';
-      })()}
+
     </div>`;
 
   container.innerHTML = '';
@@ -921,7 +910,18 @@ function renderRules() {
     </div>
     <div class="rules-block">
       <h3>🪙 The Auction</h3>
-      <p>Everyone starts with <strong>100 coins</strong>. All 32 teams are up for bid simultaneously. Highest bid wins. You must own at least 3 teams. Minimum bid is 5 coins.</p>
+      <p>Everyone starts with <strong>100 coins</strong>. All 32 teams are up for bid simultaneously. Highest bid wins. Minimum bid is 5 coins. No minimum teams required — but read below before going all in on one team!</p>
+    </div>
+    <div class="rules-block">
+      <h3>📈 More Teams = More Chances</h3>
+      <p>There are only 16 matches in the Round of 32. Every team plays exactly once. The more teams you own, the more matches you're involved in.</p>
+      <div class="rules-scoring">
+        <div class="rules-score-row"><span class="score-badge neutral">1 team</span> 1 match. Win and you earn. Lose and you're completely done — no more games.</div>
+        <div class="rules-score-row"><span class="score-badge silver">5 teams</span> 5 matches. Even if 2 lose you still have 3 earning points and stealing teams.</div>
+        <div class="rules-score-row"><span class="score-badge gold">8 teams</span> 8 matches. Maximum coverage — losses hurt less because you have more games running.</div>
+      </div>
+      <p style="margin-top:12px"><strong>Example:</strong> You spend all 100 coins on France. France beat Zac's Senegal (20 coins) → you earn 10 pts + steal 10 pts = 20 pts. That's it — France is done for the round and so are you. Meanwhile Zac spent only 20 on Senegal and has 80 coins left across 4 more teams, still earning in 4 more matches.</p>
+      <p style="margin-top:8px">Spread your coins. More teams means more matches, more steals, and more chances to win. 🏴</p>
     </div>
     <div class="rules-block">
       <h3>🟢 Bought vs 🟣 Stolen</h3>
