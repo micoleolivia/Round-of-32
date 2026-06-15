@@ -921,7 +921,7 @@ function renderRules() {
         <div class="rules-score-row"><span class="score-badge gold">8 teams</span> 8 matches. Maximum coverage — losses hurt less because you have more games running.</div>
       </div>
       <p style="margin-top:12px"><strong>Example:</strong> You spend all 100 coins on France. France beat Zac's Senegal (20 coins) → you earn 10 pts + steal 10 pts = 20 pts. That's it — France is done for the round and so are you. Meanwhile Zac spent only 20 on Senegal and has 80 coins left across 4 more teams, still earning in 4 more matches.</p>
-      <p style="margin-top:8px">Spread your coins. More teams means more matches, more steals, and more chances to win. 🏴</p>
+      <p style="margin-top:8px">Spread your coins. More teams means more matches, more steals, and more chances to win 🏴 — but also more exposure to losing points. See the points rules below!</p>
     </div>
     <div class="rules-block">
       <h3>🟢 Bought vs 🟣 Stolen</h3>
