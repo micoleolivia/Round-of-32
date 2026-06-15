@@ -26,8 +26,6 @@ const PLAYERS = [
   { name: 'Zac',      icon: '🦥', isAI: false },
   { name: 'Sean',     icon: '🦅', isAI: false },
   { name: 'Patricia', icon: '🦩', isAI: false },
-  { name: 'Claude',   icon: '🤖', isAI: true  },
-  { name: 'ChatGPT',  icon: '🦾', isAI: true  },
 ];
 
 // ============================================
