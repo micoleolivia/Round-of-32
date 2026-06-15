@@ -729,11 +729,14 @@ window.recordResult = async function(matchId, winnerSlot, loserSlot) {
       if (!state.collection[winnerHolder]) state.collection[winnerHolder] = [];
       state.collection[winnerHolder].push({ slotId: loserSlot, how:'stolen' });
 
+      // Loser loses the stolen points too
+      state.playerPoints[loserHolder] = (state.playerPoints[loserHolder]||0) - stolen;
+
       addNotification(winnerHolder,
-        `🔥 Your ${winner?.flag} ${winner?.name} beat ${loserHolder}'s ${loser?.flag} ${loser?.name} — you stole their team! +${WIN_POINTS} pts win +${stolen} pts stolen = ${WIN_POINTS + stolen} pts total`,
+        `🔥 Your ${winner?.flag} ${winner?.name} beat ${loserHolder}'s ${loser?.flag} ${loser?.name} — you stole their team! +${WIN_POINTS} win pts + ${stolen} stolen from ${loserHolder} = +${WIN_POINTS + stolen} pts total`,
         'steal', loserSlot);
       addNotification(loserHolder,
-        `💸 ${winnerHolder}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — ${winnerHolder} stole your team and ${stolen} pts!`,
+        `💸 ${winnerHolder}'s ${winner?.flag} ${winner?.name} knocked out your ${loser?.flag} ${loser?.name} — ${winnerHolder} stole ${stolen} pts from you! (−${stolen} pts)`,
         'stolen', loserSlot);
       showToast(`${winnerHolder} stole ${loser?.name} from ${loserHolder}! +${WIN_POINTS + stolen} pts 🔥`,'success');
     } else {
