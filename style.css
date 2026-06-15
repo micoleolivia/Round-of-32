@@ -190,3 +190,20 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
   .squad-summary{grid-template-columns:1fr 1fr}
   .login-title{font-size:52px}
 }
+
+/* INBOX / NOTIFICATIONS */
+.notif-badge{display:inline-flex;align-items:center;justify-content:center;background:var(--red);color:#fff;font-size:.6rem;font-weight:700;min-width:16px;height:16px;border-radius:100px;padding:0 4px;margin-left:4px;vertical-align:middle}
+.inbox-empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.inbox-item{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;margin-bottom:10px;transition:border-color .2s}
+.inbox-unread{border-left:3px solid var(--gold)!important}
+.inbox-read{opacity:.7}
+.inbox-outbid{border-left-color:var(--red)!important}
+.inbox-stolen{border-left-color:var(--red)!important}
+.inbox-win{border-left-color:var(--teal)!important}
+.inbox-loss{border-left-color:var(--text3)!important}
+.inbox-msg{font-size:.88rem;color:var(--text);line-height:1.5;margin-bottom:8px}
+.inbox-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.inbox-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0}
+.inbox-time{font-size:.7rem;color:var(--text3)}
+.inbox-action-btn{background:var(--gold);border:none;border-radius:6px;color:#000;font-size:.72rem;font-weight:700;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;margin-left:auto}
+.inbox-action-btn:hover{background:var(--gold2)}
