@@ -415,22 +415,7 @@ function buildSlotCard(slot, isAdmin) {
     card.appendChild(bidSection);
   }
 
-  // Admin: confirm winner button if auction locked and no owner
-  if (isAdmin && state.auctionLocked && !owner) {
-    const adminSection = document.createElement('div');
-    adminSection.className = 'bid-section';
-    const allBidEntries = Object.entries(allBids).sort(([,a],[,b]) => b - a);
-    if (allBidEntries.length > 0) {
-      const [topUser, topAmt] = allBidEntries[0];
-      adminSection.innerHTML = `
-        <div class="admin-winner-label">Highest: ${topUser} · ${topAmt} coins</div>
-        <button class="bid-btn" style="width:100%;margin-top:6px" onclick="confirmOwner('${slot.id}','${topUser}',${topAmt})">✅ Confirm Owner</button>
-      `;
-    } else {
-      adminSection.innerHTML = `<div class="bid-hint" style="text-align:center">No bids placed</div>`;
-    }
-    card.appendChild(adminSection);
-  }
+
 
   // Admin: update placeholder name
   if (isAdmin && !actualSlot.confirmed) {
@@ -507,10 +492,21 @@ window.confirmSlotTeam = async function(slotId) {
 };
 
 async function lockAuction() {
-  if (!confirm('Lock the auction? No more bids can be placed. You can still confirm owners.')) return;
+  if (!confirm('Lock the auction? Highest bidders will automatically win their teams!')) return;
+  
+  // Auto-assign every slot to the highest bidder
+  if (!state.owners) state.owners = {};
+  Object.entries(state.bids).forEach(([slotId, bids]) => {
+    if (state.owners[slotId]) return; // already owned
+    const entries = Object.entries(bids).sort(([,a],[,b]) => b - a);
+    if (entries.length === 0) return;
+    const [winner, coins] = entries[0];
+    state.owners[slotId] = { username: winner, coins };
+  });
+
   state.auctionLocked = true;
-  await saveToFirebase('shared', { auctionLocked: true });
-  showToast('Auction locked! 🔒', 'success');
+  await saveToFirebase('shared', { auctionLocked: true, owners: state.owners });
+  showToast('Auction locked — squads confirmed! 🔒', 'success');
   renderAuction();
 }
 
