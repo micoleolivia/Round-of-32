@@ -219,3 +219,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 .slot-owner-row   { display:flex; flex-direction:column; gap:2px; margin-top:6px; }
 .slot-owner-orig  { font-size:.7rem; color:var(--text3); }
 .slot-stolen-by   { font-size:.75rem; font-weight:600; color:var(--bet); }
+
+/* LEADERBOARD TWO-COLUMN SCORES */
+.lb-scores{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.lb-score-col{text-align:right;min-width:44px}
+.lb-score-divider{width:1px;height:32px;background:var(--border);flex-shrink:0}
