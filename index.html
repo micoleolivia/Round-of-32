@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>⚽ World Cup 2026 — Round of 32 Auction</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+  <!-- LOGIN -->
+  <div id="login-screen">
+    <div class="login-bg"></div>
+    <div class="login-content">
+      <div class="login-badge">FIFA WORLD CUP</div>
+      <h1 class="login-title">ROUND<br>OF 32<br>AUCTION</h1>
+      <p class="login-sub">Who's bidding today?</p>
+      <div id="player-buttons">
+        <button class="player-btn micole-btn" onclick="login('Micole')">
+          <span class="player-icon">🐻</span><span>Micole</span>
+          <span class="player-tag">Admin</span>
+        </button>
+        <button class="player-btn mom-btn" onclick="login('Mom')">
+          <span class="player-icon">🦒</span><span>Mom</span>
+        </button>
+        <button class="player-btn zac-btn" onclick="login('Zac')">
+          <span class="player-icon">🦥</span><span>Zac</span>
+        </button>
+        <button class="player-btn sean-btn" onclick="login('Sean')">
+          <span class="player-icon">🦅</span><span>Sean</span>
+        </button>
+        <button class="player-btn patricia-btn" onclick="login('Patricia')">
+          <span class="player-icon">🦩</span><span>Patricia</span>
+        </button>
+        <button class="player-btn claude-btn" onclick="login('Claude')">
+          <span class="player-icon">🤖</span><span>Claude</span>
+          <span class="player-tag ai-tag">AI</span>
+        </button>
+        <button class="player-btn chatgpt-btn" onclick="login('ChatGPT')">
+          <span class="player-icon">🦾</span><span>ChatGPT</span>
+          <span class="player-tag ai-tag">AI</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- APP -->
+  <div id="app" class="hidden">
+    <header>
+      <div class="header-left">
+        <span class="header-logo">⚽</span>
+        <div>
+          <div class="header-title">ROUND OF 32 — AUCTION</div>
+          <div id="welcome-msg" class="header-welcome"></div>
+        </div>
+      </div>
+      <nav id="main-nav">
+        <button id="nav-rules"     class="nav-btn" onclick="showSection('rules',event)">Rules</button>
+        <button id="nav-auction"   class="nav-btn" onclick="showSection('auction',event)">🔨 Auction</button>
+        <button id="nav-mypicks"   class="nav-btn" onclick="showSection('mypicks',event)">My Squad</button>
+        <button id="nav-results"   class="nav-btn hidden" onclick="showSection('results',event)">Results</button>
+        <button id="nav-leaderboard" class="nav-btn" onclick="showSection('leaderboard',event)">Leaderboard</button>
+      </nav>
+      <div class="header-actions">
+        <button id="reset-btn" class="reset-btn hidden" onclick="resetEverything()">🗑️ Reset</button>
+        <button class="logout-btn" onclick="logout()">← Switch</button>
+      </div>
+    </header>
+
+    <!-- RULES -->
+    <section id="rules" class="section hidden">
+      <div class="section-header">
+        <h2>How the Auction Works</h2>
+        <p>A totally different game for the knockouts</p>
+      </div>
+      <div id="rules-container" class="rules-container"></div>
+    </section>
+
+    <!-- AUCTION -->
+    <section id="auction" class="section hidden">
+      <div class="section-header">
+        <h2>🔨 Team Auction</h2>
+        <p id="auction-subtext">Bid on teams — highest bid wins. You must own at least 3 teams.</p>
+      </div>
+      <div id="auction-status-bar"></div>
+      <div id="auction-container"></div>
+    </section>
+
+    <!-- MY SQUAD -->
+    <section id="mypicks" class="section hidden">
+      <div class="section-header">
+        <h2>My Squad</h2>
+        <p>Teams you own and your points so far</p>
+      </div>
+      <div id="mypicks-container"></div>
+    </section>
+
+    <!-- RESULTS (admin) -->
+    <section id="results" class="section hidden">
+      <div class="section-header">
+        <h2>Match Results</h2>
+        <p>Enter results to resolve points and eliminations</p>
+      </div>
+      <div id="results-container"></div>
+    </section>
+
+    <!-- LEADERBOARD -->
+    <section id="leaderboard" class="section hidden">
+      <div class="section-header">
+        <h2>Leaderboard 🏆</h2>
+        <p>Who's winning the auction game</p>
+      </div>
+      <div id="leaderboard-container"></div>
+    </section>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
