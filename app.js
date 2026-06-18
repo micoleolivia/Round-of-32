@@ -213,9 +213,14 @@ function getUnreadCount(username) {
 function updateHeader() {
   const el = document.getElementById('welcome-msg');
   if (!el || !currentUser) return;
-  const remaining = getCoinsRemaining(currentUser);
   const teams = getTotalTeams(currentUser);
-  el.textContent = `${currentUser} · 🪙 ${remaining} coins · 🏳️ ${teams} teams`;
+  const pts   = state.playerPoints[currentUser] || 0;
+  if (state.auctionLocked) {
+    el.textContent = `${currentUser} · 🏳️ ${teams} teams · ⭐ ${pts} pts`;
+  } else {
+    const remaining = getCoinsRemaining(currentUser);
+    el.textContent = `${currentUser} · 🪙 ${remaining} coins · 🏳️ ${teams} teams`;
+  }
   const inboxBtn = document.getElementById('nav-inbox');
   if (inboxBtn) {
     const unread = getUnreadCount(currentUser);
