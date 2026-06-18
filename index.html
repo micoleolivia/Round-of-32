@@ -54,6 +54,7 @@
         <button id="nav-rules"     class="nav-btn" onclick="showSection('rules',event)">Rules</button>
         <button id="nav-auction"   class="nav-btn" onclick="showSection('auction',event)">🔨 Auction</button>
         <button id="nav-mypicks"   class="nav-btn" onclick="showSection('mypicks',event)">My Squad</button>
+        <button id="nav-sidebets"  class="nav-btn" onclick="showSection('sidebets',event)">🎯 Side Bets</button>
         <button id="nav-inbox"     class="nav-btn" onclick="showSection('inbox',event)">📭 Inbox</button>
         <button id="nav-results"   class="nav-btn hidden" onclick="showSection('results',event)">Results</button>
         <button id="nav-leaderboard" class="nav-btn" onclick="showSection('leaderboard',event)">Leaderboard</button>
@@ -90,6 +91,15 @@
         <p>Teams you own and your points so far</p>
       </div>
       <div id="mypicks-container"></div>
+    </section>
+
+    <!-- SIDE BETS -->
+    <section id="sidebets" class="section hidden">
+      <div class="section-header">
+        <h2>🎯 Side Bets</h2>
+        <p>Challenge other players — 2 challenges and 2 accepts per day</p>
+      </div>
+      <div id="sidebets-container"></div>
     </section>
 
     <!-- INBOX -->
