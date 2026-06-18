@@ -227,3 +227,23 @@ header{display:flex;align-items:center;justify-content:space-between;padding:0 1
 
 /* AUCTION WARNING BANNER */
 .auction-warning-banner{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.4);color:var(--gold);font-size:.8rem;font-weight:600;padding:8px 14px;border-radius:var(--radius);text-align:center;width:100%}
+
+/* SIDE BETS */
+.sidebet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-bottom:8px}
+.sidebet-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px;transition:border-color .2s}
+.sidebet-incoming{border-left:3px solid var(--gold)}
+.sidebet-accepted{border-left:3px solid var(--teal)}
+.sidebet-resolved{border-left:3px solid var(--text3)}
+.sidebet-expired{border-left:3px solid var(--text3);opacity:.6}
+.sidebet-pending{border-left:3px solid var(--bet)}
+.sidebet-from{font-size:.8rem;font-weight:700;color:var(--text2);margin-bottom:6px}
+.sidebet-match{font-size:.82rem;font-weight:600;color:var(--text);margin-bottom:4px}
+.sidebet-pick{font-size:.78rem;color:var(--text2);margin-bottom:4px}
+.sidebet-amount{font-size:.78rem;color:var(--text2);margin-top:4px}
+.sidebet-status{font-weight:700;color:var(--gold)}
+.sidebet-actions{display:flex;gap:8px;margin-top:12px}
+.sidebet-form{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;max-width:480px}
+.sidebet-form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px}
+.sidebet-label{font-size:.78rem;color:var(--text2);font-weight:500}
+.sb-select{background:var(--bg2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:.85rem;padding:8px 12px;width:100%;transition:border-color .15s}
+.sb-select:focus{outline:none;border-color:var(--gold)}
