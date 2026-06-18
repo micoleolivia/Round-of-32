@@ -32,6 +32,8 @@ const STARTING_COINS = 100;
 const MIN_TEAMS      = 0;  // No minimum — more teams = more chances
 const STEAL_PCT      = 0.5;  // 50% of loser's coins stolen as points
 const WIN_POINTS     = 10;   // flat points for any win
+const SIDEBET_DAILY_CHALLENGES = 2;  // max challenges sent per day
+const SIDEBET_DAILY_ACCEPTS    = 2;  // max accepts per day
 
 // ============================================
 // ROUND OF 32 SLOTS
@@ -103,6 +105,7 @@ let state = {
   slotOverrides:{},  // slotOverrides[slotId] = { name, flag }
   notifications:{},  // notifications[username] = [{ id, msg, type, ts, read, slotId }]
   playerPoints:{},   // playerPoints[username] = tiebreaker points
+  sideBets:{},       // sideBets[betId] = { id, from, to, matchId, slotId, amount, status, dateKey, ts }
 };
 
 let unsubscribe = null;
@@ -136,6 +139,7 @@ function startLiveListener() {
       state.slotOverrides = d.slotOverrides || {};
       state.notifications = d.notifications || {};
       state.playerPoints  = d.playerPoints  || {};
+      state.sideBets      = d.sideBets      || {};
       refreshAll();
     }
   });
@@ -148,6 +152,7 @@ function refreshAll() {
   if (!document.getElementById('leaderboard').classList.contains('hidden')) renderLeaderboard();
   if (!document.getElementById('results').classList.contains('hidden'))     renderResults();
   if (!document.getElementById('inbox').classList.contains('hidden'))       renderInbox();
+  if (!document.getElementById('sidebets').classList.contains('hidden'))    renderSideBets();
 }
 
 // ============================================
@@ -232,6 +237,7 @@ async function login(name) {
   state.slotOverrides = d.slotOverrides || {};
   state.notifications = d.notifications || {};
   state.playerPoints  = d.playerPoints  || {};
+  state.sideBets      = d.sideBets      || {};
 
   currentUser = name;
   const isAdmin = name === 'Micole';
@@ -247,6 +253,7 @@ async function login(name) {
   renderMyPicks();
   renderLeaderboard();
   renderInbox();
+  renderSideBets();
   if (isAdmin) renderResults();
 
   showSection('rules', { target: document.getElementById('nav-rules') });
@@ -756,11 +763,15 @@ window.recordResult = async function(matchId, winnerSlot, loserSlot) {
     }
   }
 
+  // Resolve any side bets for this match
+  await resolveSideBetsForMatch(matchId, winnerSlot);
+
   await saveToFirebase({
     matchResults:  state.matchResults,
     collection:    state.collection,
     notifications: state.notifications,
     playerPoints:  state.playerPoints,
+    sideBets:      state.sideBets,
   });
   renderResults();
   renderLeaderboard();
@@ -836,6 +847,369 @@ function renderLeaderboard() {
     container.appendChild(note);
   }
 }
+
+// ============================================
+// SIDE BETS
+// ============================================
+
+function getSASTDateKey() {
+  const now = new Date();
+  // SAST = UTC+2
+  const sast = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+  return sast.toISOString().slice(0, 10);
+}
+
+function getChallengesSentToday(username) {
+  const today = getSASTDateKey();
+  return Object.values(state.sideBets).filter(b =>
+    b.from === username && b.dateKey === today && b.status !== 'expired'
+  ).length;
+}
+
+function getAcceptsToday(username) {
+  const today = getSASTDateKey();
+  return Object.values(state.sideBets).filter(b =>
+    b.to === username && b.dateKey === today && (b.status === 'accepted' || b.status === 'resolved')
+  ).length;
+}
+
+function getAvailablePoints(username) {
+  // Points minus pending side bet commitments
+  const pts = state.playerPoints[username] || 0;
+  const committed = Object.values(state.sideBets)
+    .filter(b => (b.from === username || b.to === username) && b.status === 'accepted')
+    .reduce((sum, b) => sum + b.amount, 0);
+  return pts - committed;
+}
+
+// Expire side bets whose match has a result
+function expireStaleBets() {
+  let changed = false;
+  Object.values(state.sideBets).forEach(bet => {
+    if (bet.status === 'pending' && state.matchResults[bet.matchId]) {
+      bet.status = 'expired';
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+async function resolveSideBetsForMatch(matchId, winnerSlot) {
+  let changed = false;
+  const betsForMatch = Object.values(state.sideBets).filter(b =>
+    b.matchId === matchId && b.status === 'accepted'
+  );
+  betsForMatch.forEach(bet => {
+    const betWon = bet.slotId === winnerSlot;
+    if (betWon) {
+      // from wins, to loses
+      state.playerPoints[bet.from] = (state.playerPoints[bet.from] || 0) + bet.amount;
+      state.playerPoints[bet.to]   = (state.playerPoints[bet.to]   || 0) - bet.amount;
+      addNotification(bet.from,
+        `🎯 Your side bet paid off! You beat ${bet.to} — +${bet.amount} pts`,
+        'win');
+      addNotification(bet.to,
+        `💸 ${bet.from} won your side bet — −${bet.amount} pts`,
+        'stolen');
+    } else {
+      // to wins, from loses
+      state.playerPoints[bet.to]   = (state.playerPoints[bet.to]   || 0) + bet.amount;
+      state.playerPoints[bet.from] = (state.playerPoints[bet.from] || 0) - bet.amount;
+      addNotification(bet.to,
+        `🎯 You won the side bet against ${bet.from}! +${bet.amount} pts`,
+        'win');
+      addNotification(bet.from,
+        `💸 ${bet.to} beat you on the side bet — −${bet.amount} pts`,
+        'stolen');
+    }
+    bet.status = 'resolved';
+    changed = true;
+  });
+  // Also expire pending bets for this match
+  Object.values(state.sideBets).forEach(bet => {
+    if (bet.matchId === matchId && bet.status === 'pending') {
+      bet.status = 'expired';
+      changed = true;
+    }
+  });
+  return changed;
+}
+
+window.sendChallenge = async function(matchId, slotId, toUser, amount) {
+  const today = getSASTDateKey();
+  const sentToday = getChallengesSentToday(currentUser);
+  if (sentToday >= SIDEBET_DAILY_CHALLENGES) {
+    showToast(`You can only send ${SIDEBET_DAILY_CHALLENGES} challenges per day!`, 'error'); return;
+  }
+  const available = getAvailablePoints(currentUser);
+  if (amount > available) {
+    showToast(`Not enough points! You have ${available} available.`, 'error'); return;
+  }
+  if (amount < 1) { showToast('Bet at least 1 point!', 'error'); return; }
+  const slot = getSlot(slotId);
+  const match = r32Matches.find(m => m.id === matchId);
+  const slotA = getSlot(match.slotA);
+  const slotB = getSlot(match.slotB);
+  if (!confirm(`Challenge ${toUser} — bet ${amount} pts that ${slot?.name} wins ${slotA?.name} vs ${slotB?.name}?`)) return;
+
+  const betId = `bet_${Date.now()}_${Math.random().toString(36).slice(2,7)}`;
+  state.sideBets[betId] = {
+    id: betId, from: currentUser, to: toUser,
+    matchId, slotId, amount, status: 'pending',
+    dateKey: today, ts: new Date().toISOString(),
+  };
+
+  const toPlayer = PLAYERS.find(p => p.name === toUser);
+  addNotification(toUser,
+    `🎯 ${currentUser} challenges you to a side bet on ${slot?.flag} ${slot?.name} winning — ${amount} pts. Accept in Side Bets!`,
+    'challenge', null);
+
+  await saveToFirebase({ sideBets: state.sideBets, notifications: state.notifications });
+  showToast(`Challenge sent to ${toUser}! 🎯`, 'success');
+  renderSideBets();
+  updateHeader();
+};
+
+window.acceptChallenge = async function(betId) {
+  const bet = state.sideBets[betId];
+  if (!bet) return;
+  const today = getSASTDateKey();
+  const acceptsToday = getAcceptsToday(currentUser);
+  if (acceptsToday >= SIDEBET_DAILY_ACCEPTS) {
+    showToast(`You can only accept ${SIDEBET_DAILY_ACCEPTS} challenges per day!`, 'error'); return;
+  }
+  const available = getAvailablePoints(currentUser);
+  if (bet.amount > available) {
+    showToast(`Not enough points to accept! You have ${available} available.`, 'error'); return;
+  }
+  // Check match not already played
+  if (state.matchResults[bet.matchId]) {
+    showToast('This match already has a result — bet expired!', 'error');
+    bet.status = 'expired';
+    await saveToFirebase({ sideBets: state.sideBets });
+    renderSideBets(); return;
+  }
+  const slot = getSlot(bet.slotId);
+  if (!confirm(`Accept ${bet.from}'s challenge? You're betting ${bet.amount} pts against ${slot?.name} winning.`)) return;
+
+  bet.status = 'accepted';
+  addNotification(bet.from,
+    `✅ ${currentUser} accepted your side bet challenge on ${slot?.flag} ${slot?.name}! ${bet.amount} pts on the line.`,
+    'win');
+
+  await saveToFirebase({ sideBets: state.sideBets, notifications: state.notifications });
+  showToast(`Challenge accepted! ${bet.amount} pts on the line 🎯`, 'success');
+  renderSideBets();
+  updateHeader();
+};
+
+window.declineChallenge = async function(betId) {
+  const bet = state.sideBets[betId];
+  if (!bet) return;
+  bet.status = 'expired';
+  addNotification(bet.from,
+    `❌ ${currentUser} declined your side bet challenge.`,
+    'loss');
+  await saveToFirebase({ sideBets: state.sideBets, notifications: state.notifications });
+  showToast('Challenge declined.', '');
+  renderSideBets();
+};
+
+function renderSideBets() {
+  const container = document.getElementById('sidebets-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  const today          = getSASTDateKey();
+  const sentToday      = getChallengesSentToday(currentUser);
+  const acceptsToday   = getAcceptsToday(currentUser);
+  const availablePts   = getAvailablePoints(currentUser);
+
+  // Status bar
+  const statusBar = document.createElement('div');
+  statusBar.className = 'auction-status';
+  statusBar.style.marginBottom = '24px';
+  statusBar.innerHTML = `
+    <div class="auction-stat">
+      <div class="auction-stat-val" style="color:${sentToday < SIDEBET_DAILY_CHALLENGES ? 'var(--teal)' : 'var(--red)'}">${SIDEBET_DAILY_CHALLENGES - sentToday}</div>
+      <div class="auction-stat-lbl">challenges left today</div>
+    </div>
+    <div class="auction-stat">
+      <div class="auction-stat-val" style="color:${acceptsToday < SIDEBET_DAILY_ACCEPTS ? 'var(--teal)' : 'var(--red)'}">${SIDEBET_DAILY_ACCEPTS - acceptsToday}</div>
+      <div class="auction-stat-lbl">accepts left today</div>
+    </div>
+    <div class="auction-stat">
+      <div class="auction-stat-val" style="color:var(--gold)">${availablePts}</div>
+      <div class="auction-stat-lbl">pts available to bet</div>
+    </div>`;
+  container.appendChild(statusBar);
+
+  // PENDING CHALLENGES RECEIVED
+  const pendingReceived = Object.values(state.sideBets).filter(b =>
+    b.to === currentUser && b.status === 'pending' && !state.matchResults[b.matchId]
+  );
+  if (pendingReceived.length > 0) {
+    const title = document.createElement('div');
+    title.className = 'auction-section-title';
+    title.textContent = '⚡ Challenges Waiting for You';
+    container.appendChild(title);
+    const grid = document.createElement('div');
+    grid.className = 'sidebet-grid';
+    pendingReceived.forEach(bet => {
+      const slot  = getSlot(bet.slotId);
+      const match = r32Matches.find(m => m.id === bet.matchId);
+      const slotA = getSlot(match?.slotA);
+      const slotB = getSlot(match?.slotB);
+      const fromPlayer = PLAYERS.find(p => p.name === bet.from);
+      const canAccept  = acceptsToday < SIDEBET_DAILY_ACCEPTS && bet.amount <= availablePts;
+      const card = document.createElement('div');
+      card.className = 'sidebet-card sidebet-incoming';
+      card.innerHTML = `
+        <div class="sidebet-from">${fromPlayer?.icon} ${bet.from} challenges you</div>
+        <div class="sidebet-match">${slotA?.flag} ${slotA?.name} vs ${slotB?.flag} ${slotB?.name}</div>
+        <div class="sidebet-pick">They back: <strong>${slot?.flag} ${slot?.name}</strong></div>
+        <div class="sidebet-amount">💰 ${bet.amount} pts on the line</div>
+        <div class="sidebet-actions">
+          <button class="bid-btn" onclick="acceptChallenge('${bet.id}')" ${canAccept ? '' : 'disabled'} style="${!canAccept ? 'opacity:.4;cursor:default' : ''}">
+            ${acceptsToday >= SIDEBET_DAILY_ACCEPTS ? 'No accepts left' : bet.amount > availablePts ? 'Not enough pts' : 'Accept ✅'}
+          </button>
+          <button class="bid-remove-btn" onclick="declineChallenge('${bet.id}')">Decline ✕</button>
+        </div>`;
+      grid.appendChild(card);
+    });
+    container.appendChild(grid);
+  }
+
+  // SEND A CHALLENGE
+  if (!state.auctionLocked || Object.keys(state.matchResults).length < 16) {
+    const title2 = document.createElement('div');
+    title2.className = 'auction-section-title';
+    title2.style.marginTop = '28px';
+    title2.textContent = '🎯 Send a Challenge';
+    container.appendChild(title2);
+
+    if (sentToday >= SIDEBET_DAILY_CHALLENGES) {
+      const used = document.createElement('div');
+      used.className = 'bet-disabled';
+      used.textContent = `⏰ You've used both challenges for today. Come back tomorrow!`;
+      container.appendChild(used);
+    } else {
+      // Match selector
+      const form = document.createElement('div');
+      form.className = 'sidebet-form';
+      
+      const unplayedMatches = r32Matches.filter(m => !state.matchResults[m.id]);
+      
+      form.innerHTML = `
+        <div class="sidebet-form-row">
+          <label class="sidebet-label">Pick a match</label>
+          <select id="sb-match" class="sb-select" onchange="updateSideBetSlots()">
+            <option value="">— select match —</option>
+            ${unplayedMatches.map(m => {
+              const a = getSlot(m.slotA); const b = getSlot(m.slotB);
+              return `<option value="${m.id}">${a?.flag} ${a?.name} vs ${b?.flag} ${b?.name}</option>`;
+            }).join('')}
+          </select>
+        </div>
+        <div class="sidebet-form-row">
+          <label class="sidebet-label">Back this team to win</label>
+          <select id="sb-slot" class="sb-select">
+            <option value="">— pick match first —</option>
+          </select>
+        </div>
+        <div class="sidebet-form-row">
+          <label class="sidebet-label">Challenge</label>
+          <select id="sb-opponent" class="sb-select">
+            ${PLAYERS.filter(p => p.name !== currentUser).map(p =>
+              `<option value="${p.name}">${p.icon} ${p.name}</option>`
+            ).join('')}
+          </select>
+        </div>
+        <div class="sidebet-form-row">
+          <label class="sidebet-label">Bet amount (max ${availablePts} pts)</label>
+          <input type="number" id="sb-amount" class="bid-input" min="1" max="${availablePts}" value="5" style="width:100px"/>
+        </div>
+        <button class="cta-btn" style="margin-top:12px;padding:10px 28px;font-size:.85rem" onclick="submitChallenge()">Send Challenge 🎯</button>
+      `;
+      container.appendChild(form);
+    }
+  }
+
+  // MY ACTIVE / RESOLVED BETS
+  const myBets = Object.values(state.sideBets).filter(b =>
+    (b.from === currentUser || b.to === currentUser) && b.status !== 'pending' || 
+    (b.from === currentUser && b.status === 'pending')
+  ).sort((a,b) => new Date(b.ts) - new Date(a.ts));
+
+  if (myBets.length > 0) {
+    const title3 = document.createElement('div');
+    title3.className = 'auction-section-title';
+    title3.style.marginTop = '28px';
+    title3.textContent = '📋 My Bets';
+    container.appendChild(title3);
+    const grid2 = document.createElement('div');
+    grid2.className = 'sidebet-grid';
+    myBets.forEach(bet => {
+      const slot  = getSlot(bet.slotId);
+      const match = r32Matches.find(m => m.id === bet.matchId);
+      const slotA = getSlot(match?.slotA);
+      const slotB = getSlot(match?.slotB);
+      const iFrom = bet.from === currentUser;
+      const opponent = iFrom ? bet.to : bet.from;
+      const oppPlayer = PLAYERS.find(p => p.name === opponent);
+      const statusMap = {
+        pending:  '⏳ Awaiting response',
+        accepted: '✅ Active',
+        expired:  '⌛ Expired',
+        resolved: state.matchResults[bet.matchId]
+          ? (bet.slotId === state.matchResults[bet.matchId].winnerSlot
+              ? (iFrom ? '🏆 You won!' : '💸 You lost')
+              : (iFrom ? '💸 You lost' : '🏆 You won!'))
+          : '✅ Resolved',
+      };
+      const card = document.createElement('div');
+      card.className = `sidebet-card sidebet-${bet.status}`;
+      card.innerHTML = `
+        <div class="sidebet-from">${iFrom ? `You → ${oppPlayer?.icon} ${opponent}` : `${oppPlayer?.icon} ${opponent} → You`}</div>
+        <div class="sidebet-match">${slotA?.flag} ${slotA?.name} vs ${slotB?.flag} ${slotB?.name}</div>
+        <div class="sidebet-pick">Backing: <strong>${slot?.flag} ${slot?.name}</strong></div>
+        <div class="sidebet-amount">💰 ${bet.amount} pts · <span class="sidebet-status">${statusMap[bet.status]}</span></div>`;
+      grid2.appendChild(card);
+    });
+    container.appendChild(grid2);
+  }
+
+  if (myBets.length === 0 && pendingReceived.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'squad-empty';
+    empty.innerHTML = `<div style="font-size:2.5rem;margin-bottom:12px">🎯</div><div style="font-weight:600;margin-bottom:6px">No side bets yet</div><div style="color:var(--text2);font-size:.88rem">Challenge someone above to get started!</div>`;
+    container.appendChild(empty);
+  }
+}
+
+window.updateSideBetSlots = function() {
+  const matchId = document.getElementById('sb-match')?.value;
+  const slotSel = document.getElementById('sb-slot');
+  if (!slotSel) return;
+  if (!matchId) { slotSel.innerHTML = '<option value="">— pick match first —</option>'; return; }
+  const match = r32Matches.find(m => m.id === matchId);
+  const slotA = getSlot(match.slotA);
+  const slotB = getSlot(match.slotB);
+  slotSel.innerHTML = `
+    <option value="${match.slotA}">${slotA?.flag} ${slotA?.name}</option>
+    <option value="${match.slotB}">${slotB?.flag} ${slotB?.name}</option>`;
+};
+
+window.submitChallenge = function() {
+  const matchId  = document.getElementById('sb-match')?.value;
+  const slotId   = document.getElementById('sb-slot')?.value;
+  const toUser   = document.getElementById('sb-opponent')?.value;
+  const amount   = parseInt(document.getElementById('sb-amount')?.value);
+  if (!matchId) { showToast('Pick a match!', 'error'); return; }
+  if (!slotId)  { showToast('Pick a team to back!', 'error'); return; }
+  if (!toUser)  { showToast('Pick an opponent!', 'error'); return; }
+  sendChallenge(matchId, slotId, toUser, amount);
+};
 
 // ============================================
 // INBOX
@@ -955,6 +1329,16 @@ function renderRules() {
       <p>Your winning team stays, your losing team is eliminated. No stealing from yourself! You still earn points for the win though.</p>
     </div>
     <div class="rules-block">
+      <h3>🎯 Side Bets</h3>
+      <p>During the tournament you can challenge other players to side bets on any unplayed match. Pick a team to back, pick an opponent, set a stake. If they accept, points transfer automatically when the result is entered.</p>
+      <div class="rules-scoring">
+        <div class="rules-score-row"><span class="score-badge gold">2</span> Challenges you can send per day</div>
+        <div class="rules-score-row"><span class="score-badge gold">2</span> Challenges you can accept per day</div>
+        <div class="rules-score-row"><span class="score-badge neutral">⌛</span> Challenges expire if not accepted before the match kicks off</div>
+        <div class="rules-score-row"><span class="score-badge neutral">🚫</span> You can't bet more than your available points pool</div>
+      </div>
+    </div>
+    <div class="rules-block">
       <h3>📬 Inbox</h3>
       <p>Check your inbox — you'll get notified when someone outbids you during the auction, when your team steals another, or when your team gets eliminated.</p>
     </div>`;
@@ -990,9 +1374,9 @@ async function resetEverything() {
   showLoading(true);
   await setDoc(doc(db,'worldcup2026_r32','shared'), {
     bids:{}, owners:{}, collection:{}, auctionLocked:false,
-    matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{}
+    matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{}, sideBets:{}
   });
-  state = { bids:{}, owners:{}, collection:{}, auctionLocked:false, matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{} };
+  state = { bids:{}, owners:{}, collection:{}, auctionLocked:false, matchResults:{}, slotOverrides:{}, notifications:{}, playerPoints:{}, sideBets:{} };
   showLoading(false);
   showToast('🗑️ All data reset!','success');
   renderAuction(); renderMyPicks(); renderLeaderboard(); updateHeader();
